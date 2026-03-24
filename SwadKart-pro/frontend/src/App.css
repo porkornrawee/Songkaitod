@@ -1,0 +1,91 @@
+/* ==========================================
+   🚀 SWADKART PRO - GLOBAL STYLES
+   ========================================== */
+
+#root {
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  text-align: left; /* Default text aligned for forms and lists */
+}
+
+/* 📱 Mobile UX Optimizations */
+* {
+  -webkit-tap-highlight-color: transparent; /* Remove blue highlight on tap */
+  outline: none;
+  box-sizing: border-box;
+}
+
+/* 🌑 Professional Dark Mode Background */
+body {
+  background-color: #030712; /* Tailwind dark-950 */
+  color: #ffffff;
+  overflow-x: hidden;
+}
+
+/* 📜 Custom Scrollbar (Neon Primary Theme) */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0f172a; /* dark-900 */
+}
+
+::-webkit-scrollbar-thumb {
+  background: #ff6b6b; /* Neon Red */
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #ff4757;
+}
+
+/* 🚫 Hide Scrollbar Utility */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* ✨ Premium Animations (Custom Framer-like flow) */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slideUp 0.5s ease-out forwards;
+}
+
+/* 🖼️ Glassmorphism Cards */
+.glass-card {
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* 🥘 Responsive Food Grids Fix */
+.grid-auto-fit {
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+}
+
+/* 📝 Text Optimization */
+.tracking-ultra {
+  letter-spacing: 0.2em;
+}
+
+.font-black-italic {
+  font-weight: 900;
+  font-style: italic;
+}
