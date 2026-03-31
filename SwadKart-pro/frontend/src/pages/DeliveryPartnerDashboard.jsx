@@ -48,7 +48,7 @@ const DeliveryPartnerDashboard = () => {
         });
         setTasks(sortedTasks);
       }
-    } catch (error) {
+    } catch  {
       toast.error("Radar Sync Failed: Could not load tasks");
     } finally {
       setLoading(false);
@@ -105,7 +105,7 @@ const DeliveryPartnerDashboard = () => {
         const error = await res.json();
         toast.error(error.message || "Action Failed");
       }
-    } catch (error) {
+    } catch {
       toast.error("Transmission Error");
     }
   };
@@ -134,7 +134,7 @@ const DeliveryPartnerDashboard = () => {
       } else {
         toast.error(data.message || "OTP Invalid");
       }
-    } catch (error) {
+    } catch  {
       toast.error("Handshake Failed");
     }
   };

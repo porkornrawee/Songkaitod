@@ -129,15 +129,14 @@ const Footer = () => {
               to="/"
               className="text-4xl font-black tracking-tighter text-primary flex items-center gap-1 group w-fit"
             >
-              Swad
+              ซ่อง
               <span className="text-white group-hover:text-gray-300 transition-colors">
-                Kart
+                ไก่ทอด
               </span>
               <span className="w-2.5 h-2.5 rounded-full bg-primary mt-4 animate-bounce"></span>
             </Link>
             <p className="text-gray-400 text-sm leading-7 font-medium pr-4">
-              Experience the best food delivery service in town. Fresh, hot, and
-              tasty meals delivered right to your doorstep within minutes. ⚡
+              ไก่ทอดที่มาจากซ่อง อร่อยปากลำบากตูด ⚡
             </p>
 
             <div className="flex gap-3 pt-2">
@@ -235,9 +234,9 @@ const Footer = () => {
                     <MapPin size={18} />
                   </div>
                   <span className="leading-relaxed group-hover:text-gray-300 transition-colors">
-                    Jagannath University
+                    Thammasat University
                     <br />
-                    Jaipur, Rajasthan, India
+                    Porkornrawee
                   </span>
                 </a>
               </li>
@@ -289,7 +288,7 @@ const Footer = () => {
               href="#"
               className="text-white font-bold group-hover:text-primary transition-colors"
             >
-              Gautam Kumar
+              Porkornrawee
             </a>
           </div>
         </div>

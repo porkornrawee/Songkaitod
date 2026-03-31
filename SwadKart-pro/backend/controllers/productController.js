@@ -36,27 +36,22 @@ export const getProductById = async (req, res) => {
 // 🔴 FIX: Handles fetching when Frontend sends Owner ID instead of Restaurant ID
 export const getProductsByRestaurant = async (req, res) => {
   try {
-    const id = req.params.id; // Ye Owner ID ho sakti hai (Admin Panel se)
-    let queryId = id;
+    const id = req.params.id;
+    console.log("🔍 Looking for restaurant ID:", id);
 
-    // 🔍 Step 1: Check karo kya ye ID kisi Owner ki hai?
-    const restaurantByOwner = await Restaurant.findOne({ owner: id });
-    
-    // Agar Owner mil gaya, toh uski 'Restaurant ID' use karo products dhoondne ke liye
-    if (restaurantByOwner) {
-      queryId = restaurantByOwner._id;
-    }
-
-    // 🔍 Step 2: Ab Products dhoondo (Resolved ID se)
     const products = await Product.find({
       $or: [
-        { restaurant: queryId }, // Match resolved Restaurant ID
-        { user: id }             // Fallback: Match User ID directly (Old logic)
+        { restaurant: id },
+        { user: id }
       ],
     }).sort({ orderIndex: 1 });
 
+    console.log("📦 Products found:", products.length);
+    console.log("📦 Products:", JSON.stringify(products));
+
     res.json(products);
   } catch (error) {
+    console.error("❌ Error:", error);
     res.status(500).json({ message: error.message });
   }
 };

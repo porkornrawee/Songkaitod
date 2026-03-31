@@ -39,7 +39,7 @@ const ShopsTab = ({ restaurants, userInfo, fetchAllData }) => {
   // --- 🔌 Socket Listener ---
   useEffect(() => {
     const socket = io(BASE_URL);
-    socket.on("shopStatusUpdated", (updatedShop) => {
+    socket.on("shopStatusUpdated",  => {
       console.log("Socket Signal Received: Updating List...");
       if (fetchAllData) fetchAllData();
     });
@@ -107,7 +107,7 @@ const ShopsTab = ({ restaurants, userInfo, fetchAllData }) => {
         const err = await res.json();
         toast.error(err.message || "Delete failed");
       }
-    } catch (error) {
+    } catch {
       toast.error("Destruction sequence failed");
     }
   };

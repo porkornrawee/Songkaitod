@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { saveShippingAddress } from "../redux/cartSlice";
@@ -60,7 +60,7 @@ const Shipping = () => {
           state: stateName, // Updated state
         }));
       }
-    } catch (e) {
+    } catch  {
       console.error("Geocoding Error");
     }
   };
@@ -79,7 +79,7 @@ const Shipping = () => {
         setMapCenter(newPos);
         fetchAddressFromCoords(newPos[0], newPos[1]);
       }
-    } catch (e) {
+    } catch  {
       console.error("Search Error");
     } finally {
       setIsSearching(false);

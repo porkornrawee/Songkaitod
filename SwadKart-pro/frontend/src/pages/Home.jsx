@@ -1,217 +1,201 @@
-import React, { useEffect, useState, useRef, lazy, Suspense } from "react";
-import { Link } from "react-router-dom";
-import { Search, MapPin, Clock, Star, ArrowRight, Loader2 } from "lucide-react";
+import React, { useEffect, useState, useRef } from "react";
+import { Link, useParams, useSearchParams } from "react-router-dom";
+import { Star, Clock, Loader2, UtensilsCrossed } from "lucide-react";
 import { BASE_URL } from "../config";
-
-// Lazy-load VoiceSearch: non-critical, only needed on user interaction
-const VoiceSearch = lazy(() => import("../components/VoiceSearch"));
-
 import { toast } from "react-hot-toast";
 
-// Hero image URL (aggressively optimized for mobile: 600px width, q=60, WebP)
-// Hero image: self-hosted for zero DNS/TLS overhead (same Unsplash image, saved locally)
-const HERO_IMG_URL = "/hero.webp";
+const FALLBACK_RESTAURANT_ID = "69cb2f9b5be503cfcb84adcd";
+
+// ===================================================
+// 🍽️ ใส่เมนูร้านตรงนี้ได้เลย ไม่ต้องพึ่ง database
+// ===================================================
+const STATIC_MENU = [
+  {
+    _id: "1",
+    name: "กะหรี่ไก่",
+    price: 35,
+    description: "ไก่ทอดจากกะหรี่ หอมกรอบ",
+    category: "อาหารทานเล่น",
+    image: "https://placehold.co/400x300/1a1a2e/ffffff?text=กะหรี่ไก่",
+    isVeg: false,
+    inStock: true,
+  },
+  {
+    _id: "2",
+    name: "ข้าวผัด",
+    price: 60,
+    description: "ข้าวผัดหมู ไข่ดาว หอมหัวใหญ่",
+    category: "อาหารจานเดียว",
+    image: "https://placehold.co/400x300/1a1a2e/ffffff?text=ข้าวผัด",
+    isVeg: false,
+    inStock: true,
+  },
+  {
+    _id: "3",
+    name: "ส้มตำ",
+    price: 50,
+    description: "ส้มตำไทย รสจัดจ้าน",
+    category: "อาหารจานเดียว",
+    image: "https://placehold.co/400x300/1a1a2e/ffffff?text=ส้มตำ",
+    isVeg: true,
+    inStock: true,
+  },
+  // ✅ เพิ่มเมนูได้เรื่อยๆ ตรงนี้เลย
+];
+
+const RESTAURANT_INFO = {
+  name: "ซ่องไก่ทอด",
+  isOpenNow: true,
+  rating: 4.5,
+};
 
 const Home = () => {
-  const [restaurants, setRestaurants] = useState([]);
-  const [filteredRestaurants, setFilteredRestaurants] = useState([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [loading, setLoading] = useState(true);
+  const { restaurantId: paramId } = useParams();
+  const [searchParams] = useSearchParams();
+  const queryId = searchParams.get("restaurantId");
+  const restaurantId = paramId || queryId || FALLBACK_RESTAURANT_ID;
+
+  const [menuItems, setMenuItems] = useState(STATIC_MENU);
+  const [restaurantInfo, setRestaurantInfo] = useState(RESTAURANT_INFO);
+  const [loading, setLoading] = useState(false);
+  const [activeCategory, setActiveCategory] = useState("All");
   const socketRef = useRef(null);
 
-  // 1. Fetch Restaurants
-  const fetchRestaurants = async () => {
-    try {
-      const res = await fetch(`${BASE_URL}/api/v1/users/restaurants`);
-      if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
-      const data = await res.json();
-      const allShops = Array.isArray(data) ? data : data.restaurants || [];
-
-      // Sort by orderIndex
-      const sortedShops = allShops.sort(
-        (a, b) => (a.orderIndex || 0) - (b.orderIndex || 0),
-      );
-
-      setRestaurants(sortedShops);
-      setFilteredRestaurants(sortedShops);
-    } catch (error) {
-      console.error("Error fetching restaurants:", error);
-      toast.error("Failed to connect to backend. Check if server is running!");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // 2. Real-time Updates via Socket.io (Lazy-loaded to reduce initial bundle)
   useEffect(() => {
-    fetchRestaurants();
+    const fetchMenu = async () => {
+      try {
+        const res = await fetch(
+          `${BASE_URL}/api/v1/products/restaurant/${restaurantId}`
+        );
+        if (!res.ok) return;
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          setMenuItems(data);
+        }
+      } catch (error) {
+        console.log("ใช้ static menu แทน");
+      }
+    };
 
-    // Dynamic import: Socket.IO is loaded only when needed (~100KB saved from initial bundle)
+    fetchMenu();
+
     import("socket.io-client").then(({ default: io }) => {
       const socket = io(BASE_URL);
       socketRef.current = socket;
-
-      socket.on("restaurantUpdated", (updatedShop) => {
-        setRestaurants((prevShops) => {
-          let updatedList = prevShops.map((shop) =>
-            shop._id === updatedShop._id ? updatedShop : shop,
-          );
-
-          // If new restaurant added via admin panel
-          const exists = prevShops.find((s) => s._id === updatedShop._id);
-          if (!exists) updatedList.push(updatedShop);
-
-          return [...updatedList].sort(
-            (a, b) => (a.orderIndex || 0) - (b.orderIndex || 0),
-          );
-        });
-      });
+      socket.on("menuUpdated", fetchMenu);
     });
 
     return () => {
       if (socketRef.current) socketRef.current.disconnect();
     };
-  }, []);
+  }, [restaurantId]);
 
-  // 3. Search Filtering Logic
-  useEffect(() => {
-    const results = restaurants.filter((shop) => {
-      return (
-        shop.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        shop.description?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    });
-    setFilteredRestaurants(results);
-  }, [searchTerm, restaurants]);
+  const categories = [
+    "All",
+    ...Array.from(new Set(menuItems.map((item) => item.category).filter(Boolean))),
+  ];
+
+  const filtered =
+    activeCategory === "All"
+      ? menuItems
+      : menuItems.filter((item) => item.category === activeCategory);
+
+  const inStock = filtered.filter((item) => item.inStock !== false);
 
   return (
     <div className="bg-black min-h-screen text-white pt-20">
-      {/* ================= HERO SECTION ================= */}
-      {/* Using <img> instead of CSS background-image for better LCP discovery by browser preload scanner */}
-      <div className="relative h-[500px] w-full overflow-hidden">
-        <img
-          src={HERO_IMG_URL}
-          alt="Delicious food spread"
-          fetchPriority="high"
-          decoding="async"
-          width={480}
-          height={300}
-          sizes="100vw"
-          className="absolute inset-0 w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent flex flex-col justify-center items-center text-center px-4">
-          <h1 className="text-5xl md:text-7xl font-extrabold mb-6 tracking-tight">
-            Craving <span className="text-primary">Delicious</span> Food?
-          </h1>
-          <p className="text-gray-300 text-lg md:text-xl mb-8 max-w-2xl">
-            Order from the best restaurants in Jaipur and get it delivered to
-            your doorstep.
-          </p>
 
-          {/* 👇 SEARCH BAR UI */}
-          <div className="w-full max-w-xl mx-auto mt-6">
-            <div className="flex items-center bg-white rounded-full shadow-2xl shadow-primary/20 p-1.5 border border-transparent focus-within:border-primary/50 transition-all">
-              {/* Input Field */}
-              <input
-                type="text"
-                placeholder="Search for restaurants..."
-                className="flex-1 bg-transparent px-4 md:px-6 py-2 text-black outline-none font-medium placeholder:text-gray-400 min-w-0 text-sm md:text-base"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-
-              {/* Voice Search (lazy-loaded) */}
-              <div className="shrink-0 pr-2 cursor-pointer hover:scale-110 transition-transform">
-                <Suspense fallback={null}>
-                  <VoiceSearch setSearchTerm={setSearchTerm} />
-                </Suspense>
-              </div>
-
-              {/* Divider */}
-              <div className="h-6 w-[1px] bg-gray-300 mx-1"></div>
-
-              {/* Search Button */}
-              <button
-                aria-label="Search restaurants"
-                className="bg-primary hover:bg-red-600 text-white p-3 md:px-6 md:py-3 rounded-full font-bold transition-all flex items-center justify-center gap-2 shrink-0 shadow-md"
-              >
-                <Search size={20} />
-                <span className="hidden md:block">Search</span>
-              </button>
+      {/* RESTAURANT HEADER */}
+      <div className="max-w-7xl mx-auto px-6 pt-8 pb-4">
+        <div className="flex items-center gap-4 mb-2">
+          <span className="text-4xl">🍽️</span>
+          <div>
+            <h1 className="text-3xl md:text-4xl font-extrabold">
+              {restaurantInfo?.name || "เมนูอาหาร"}
+            </h1>
+            <div className="flex items-center gap-4 mt-1 text-sm text-gray-400">
+              {restaurantInfo?.rating > 0 && (
+                <span className="flex items-center gap-1 text-yellow-400 font-bold">
+                  <Star size={14} fill="currentColor" />
+                  {restaurantInfo.rating.toFixed(1)}
+                </span>
+              )}
+              <span className="flex items-center gap-1">
+                <Clock size={14} />
+                {restaurantInfo?.isOpenNow ? "เปิดให้บริการ" : "ปิดให้บริการ"}
+              </span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* ================= RESTAURANT LIST ================= */}
-      <div className="max-w-7xl mx-auto px-6 py-16">
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-10">
-          <div className="w-1 h-10 bg-primary rounded-full"></div>
-          <h2 className="text-3xl md:text-4xl font-bold">
-            {searchTerm
-              ? `Results for "${searchTerm}"`
-              : "Top Restaurants in Jaipur"}
-          </h2>
+      {/* CATEGORY TABS */}
+      {categories.length > 1 && (
+        <div className="max-w-7xl mx-auto px-6 mb-6">
+          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+            {categories.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setActiveCategory(cat)}
+                className={`shrink-0 px-5 py-2 rounded-full text-sm font-bold transition-all ${
+                  activeCategory === cat
+                    ? "bg-primary text-white shadow-lg shadow-primary/30"
+                    : "bg-gray-900 text-gray-400 border border-gray-800 hover:border-primary/50"
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
         </div>
+      )}
 
-        {/* Loading / No Data / List */}
+      {/* MENU GRID */}
+      <div className="max-w-7xl mx-auto px-6 pb-16">
         {loading ? (
           <div className="flex justify-center items-center h-64">
             <Loader2 className="animate-spin text-primary h-12 w-12" />
           </div>
-        ) : filteredRestaurants.length === 0 ? (
+        ) : inStock.length === 0 ? (
           <div className="text-center py-20 bg-gray-900 rounded-2xl">
-            <p className="text-gray-400 text-xl">
-              No results found for your search.
-            </p>
+            <UtensilsCrossed size={48} className="text-gray-600 mx-auto mb-4" />
+            <p className="text-gray-400 text-xl">ไม่มีเมนูในหมวดนี้</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 transition-all duration-500">
-            {filteredRestaurants.map((shop) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {inStock.map((item) => (
               <Link
-                to={`/restaurant/${shop._id}`}
-                key={shop._id}
+                to={`/restaurant/${restaurantId}`}
+                key={item._id}
                 className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden hover:border-primary/50 transition-all hover:shadow-2xl hover:shadow-primary/10 group block"
               >
-                {/* Image Section */}
-                <div className="relative h-60 overflow-hidden">
+                <div className="relative h-48 overflow-hidden">
                   <img
-                    src={
-                      shop.image ||
-                      "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=400&q=70&fm=webp&auto=format&fit=crop"
-                    }
-                    alt={shop.name || "Restaurant image"}
+                    src={item.image || "https://placehold.co/400x300/1a1a2e/ffffff?text=อาหาร"}
+                    alt={item.name}
                     loading="lazy"
-                    width={400}
-                    height={267}
-                    sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                   />
-                  <div className="absolute top-4 right-4 bg-black/70 backdrop-blur px-3 py-1 rounded-full flex items-center gap-1 text-yellow-400 font-bold text-sm">
-                    <Star size={14} fill="currentColor" /> {shop.rating > 0 ? shop.rating.toFixed(1) : "New"}
-                  </div>
-                  <div className="absolute top-4 left-4 bg-primary text-white px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider shadow-lg">
-                    {shop.isOpenNow ? "Open" : "Closed"}
+                  <div className={`absolute top-3 left-3 w-5 h-5 rounded-sm border-2 flex items-center justify-center ${item.isVeg ? "border-green-500 bg-black" : "border-red-500 bg-black"}`}>
+                    <div className={`w-2.5 h-2.5 rounded-full ${item.isVeg ? "bg-green-500" : "bg-red-500"}`} />
                   </div>
                 </div>
 
-                {/* Details Section */}
-                <div className="p-6">
-                  <h3 className="text-2xl font-bold mb-2 group-hover:text-primary transition-colors">
-                    {shop.name}
+                <div className="p-5">
+                  <h3 className="text-lg font-bold mb-1 group-hover:text-primary transition-colors">
+                    {item.name}
                   </h3>
-                  <div className="flex items-center gap-2 text-gray-400 text-sm mb-4">
-                    <MapPin size={16} className="text-primary" />
-                    <span>Jaipur, Rajasthan</span>
-                  </div>
-
-                  <div className="border-t border-gray-800 pt-4 flex justify-between items-center text-sm text-gray-500">
-                    <div className="flex items-center gap-2">
-                      <Clock size={16} /> {shop.isOpenNow ? "30-40 mins" : "Currently Closed"}
-                    </div>
-                    <span className="flex items-center gap-1 text-white font-bold group-hover:translate-x-2 transition-transform">
-                      View Menu <ArrowRight size={16} />
+                  {item.description && (
+                    <p className="text-gray-500 text-sm mb-3 line-clamp-2">
+                      {item.description}
+                    </p>
+                  )}
+                  <div className="flex justify-between items-center">
+                    <span className="text-primary font-extrabold text-xl">
+                      ฿{item.price}
+                    </span>
+                    <span className="bg-primary hover:bg-red-600 text-white text-sm font-bold px-4 py-1.5 rounded-full transition-all">
+                      + เพิ่ม
                     </span>
                   </div>
                 </div>

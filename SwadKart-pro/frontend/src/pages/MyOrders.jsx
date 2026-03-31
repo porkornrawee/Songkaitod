@@ -38,7 +38,7 @@ const MyOrders = () => {
             data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
           );
           setLoading(false);
-        } catch (error) {
+        } catch  {
           toast.error("Failed to load orders");
           setLoading(false);
         }
@@ -65,7 +65,7 @@ const MyOrders = () => {
       });
       toast.success("Order items added to cart! 🎉");
       navigate("/cart");
-    } catch (err) {
+    } catch  {
       toast.error("Failed to re-order");
     }
   };

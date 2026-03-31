@@ -121,7 +121,7 @@ const PlaceOrder = () => {
       } else {
         toast.error("Security Alert: Payment verification failed!");
       }
-    } catch (error) {
+    } catch  {
       toast.error("Verification protocol error");
     }
   };

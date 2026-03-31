@@ -27,7 +27,7 @@ const UsersTab = ({ userInfo }) => {
       if (res.ok) {
         setUsers(data);
       }
-    } catch (err) {
+    } catch  {
       toast.error("Failed to sync user database");
     } finally {
       setLoading(false);
@@ -60,7 +60,7 @@ const UsersTab = ({ userInfo }) => {
         const err = await res.json();
         toast.error(err.message || "Protocol Failure: Role update failed");
       }
-    } catch (err) {
+    } catch  {
       toast.error("Radar interference while updating role");
     }
   };
@@ -84,7 +84,7 @@ const UsersTab = ({ userInfo }) => {
         const error = await res.json();
         toast.error(error.message || "Scrub failed");
       }
-    } catch (err) {
+    } catch  {
       toast.error("System connection error");
     }
   };

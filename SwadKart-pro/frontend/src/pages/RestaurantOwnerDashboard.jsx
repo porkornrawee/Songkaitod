@@ -33,6 +33,7 @@ const RestaurantOwnerDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ revenue: 0, pending: 0, delivered: 0 });
   const [isSoundEnabled, setIsSoundEnabled] = useState(true);
+  const [newOrderPopup, setNewOrderPopup] = useState(null);
 
   // Menu Modal State
   const [showModal, setShowModal] = useState(false);
@@ -75,12 +76,6 @@ const RestaurantOwnerDashboard = () => {
   const fetchData = async () => {
     if (!userInfo) return;
     try {
-      console.log(
-        "Fetching from:",
-        `${BASE_URL}/api/v1/orders/restaurant-orders`
-      );
-      console.log("Token:", userInfo.token);
-      // Helper to safely parse JSON
       const safeJson = async (promise) => {
         try {
           const res = await promise;
@@ -92,19 +87,12 @@ const RestaurantOwnerDashboard = () => {
         }
       };
 
-      // ✅ Calling Correct Routes
       const [dOrders, dMenu, dPartners, dGraph] = await Promise.all([
         safeJson(
-          fetch(
-            `${BASE_URL}/api/v1/orders/restaurant-orders`,
-            getFetchOptions()
-          )
+          fetch(`${BASE_URL}/api/v1/orders/restaurant-orders`, getFetchOptions())
         ),
         safeJson(
-          fetch(
-            `${BASE_URL}/api/v1/products/restaurant/${userInfo._id}`,
-            getFetchOptions()
-          )
+          fetch(`${BASE_URL}/api/v1/products/restaurant/${userInfo._id}`, getFetchOptions())
         ),
         safeJson(
           fetch(`${BASE_URL}/api/v1/users/delivery-partners`, getFetchOptions())
@@ -114,7 +102,6 @@ const RestaurantOwnerDashboard = () => {
         ),
       ]);
 
-      // 🛡️ CRASH PROTECTION: Ensure data is strictly an array
       const safeOrders = Array.isArray(dOrders) ? dOrders : [];
       const safeMenu = Array.isArray(dMenu) ? dMenu : [];
       const safePartners = Array.isArray(dPartners) ? dPartners : [];
@@ -126,27 +113,21 @@ const RestaurantOwnerDashboard = () => {
 
       setGraphData(
         safeGraph.map((i) => ({
-          day: new Date(i._id).toLocaleDateString("en-US", {
-            weekday: "short",
-          }),
+          day: new Date(i._id).toLocaleDateString("en-US", { weekday: "short" }),
           sales: i.sales,
         }))
       );
 
       setStats({
-        revenue: safeOrders.reduce(
-          (acc, o) => acc + (o.isPaid ? o.totalPrice : 0),
-          0
-        ),
+        revenue: safeOrders.reduce((acc, o) => acc + (o.isPaid ? o.totalPrice : 0), 0),
         pending: safeOrders.filter(
           (o) => o.orderStatus !== "Delivered" && o.orderStatus !== "Cancelled"
         ).length,
-        delivered: safeOrders.filter((o) => o.orderStatus === "Delivered")
-          .length,
+        delivered: safeOrders.filter((o) => o.orderStatus === "Delivered").length,
       });
     } catch (e) {
       console.error("Dashboard Sync Error:", e);
-      setOrders([]); // Fallback
+      setOrders([]);
     } finally {
       setLoading(false);
     }
@@ -161,10 +142,11 @@ const RestaurantOwnerDashboard = () => {
 
       socket.on("newOrderReceived", (newOrder) => {
         if (isSoundEnabled && audioPlayer.current) {
-          audioPlayer.current
-            .play()
-            .catch((e) => console.log("Audio play failed", e));
+          audioPlayer.current.play().catch((e) => console.log("Audio play failed", e));
         }
+
+        setNewOrderPopup(newOrder);
+
         toast.success(`🔔 NEW ORDER! #${newOrder._id.slice(-6)}`, {
           duration: 6000,
           icon: "🍕",
@@ -175,18 +157,16 @@ const RestaurantOwnerDashboard = () => {
             border: "1px solid #ef4444",
           },
         });
-        fetchData(); // Refresh Data
+        fetchData();
       });
     }
 
-    // Cleanup on Unmount
     return () => {
       socket.off("newOrderReceived");
       socket.disconnect();
     };
   }, [userInfo, isSoundEnabled]);
 
-  // ✅ Fixed Duplicate Function
   const handleToggleStock = async (id) => {
     const res = await fetch(
       `${BASE_URL}/api/v1/products/${id}/toggle-stock`,
@@ -201,20 +181,18 @@ const RestaurantOwnerDashboard = () => {
   const handleAssignPartner = async (orderId) => {
     const pId = selectedPartner[orderId];
     if (!pId) return toast.error("Please select a partner");
-
     try {
       const res = await fetch(
         `${BASE_URL}/api/v1/orders/${orderId}/assign`,
         getFetchOptions("PUT", { deliveryPartnerId: pId })
       );
-
       if (res.ok) {
         fetchData();
         toast.success("Pilot Assigned 🛵");
       } else {
         toast.error("Assignment failed");
       }
-    } catch (e) {
+    } catch {
       toast.error("Network error");
     }
   };
@@ -242,14 +220,8 @@ const RestaurantOwnerDashboard = () => {
       price: Number(newItem.price),
       isVeg: newItem.isVeg === "true",
       restaurantId: userInfo._id,
-      variants: (newItem.variants || []).map((v) => ({
-        ...v,
-        price: Number(v.price),
-      })),
-      addons: (newItem.addons || []).map((a) => ({
-        ...a,
-        price: Number(a.price),
-      })),
+      variants: (newItem.variants || []).map((v) => ({ ...v, price: Number(v.price) })),
+      addons: (newItem.addons || []).map((a) => ({ ...a, price: Number(a.price) })),
     };
 
     const res = await fetch(url, getFetchOptions(method, payload));
@@ -306,7 +278,7 @@ const RestaurantOwnerDashboard = () => {
               onClick={() => setActiveTab(tab.id)}
               className={`flex-1 flex items-center justify-center gap-3 py-4 rounded-xl font-extrabold text-[10px] uppercase tracking-[0.2em] transition-all duration-300 ${
                 activeTab === tab.id
-                  ? `bg-primary text-white shadow-lg shadow-primary/20 scale-[1.02]`
+                  ? "bg-primary text-white shadow-lg shadow-primary/20 scale-[1.02]"
                   : "text-gray-500 hover:text-gray-300 hover:bg-gray-800/50"
               }`}
             >
@@ -380,6 +352,73 @@ const RestaurantOwnerDashboard = () => {
           </div>
         )}
       </div>
+
+      {/* ===== NEW ORDER POPUP ===== */}
+      {newOrderPopup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+          <div className="bg-gray-900 border-2 border-primary rounded-3xl p-8 max-w-sm w-full mx-4 shadow-2xl shadow-primary/30">
+
+            {/* Header */}
+            <div className="flex items-center gap-3 mb-6">
+              <span className="text-4xl animate-pulse">🔔</span>
+              <div>
+                <p className="text-[10px] text-primary font-extrabold uppercase tracking-widest">
+                  New Order Arrived!
+                </p>
+                <p className="text-white font-extrabold text-xl">
+                  #{newOrderPopup._id?.slice(-6)}
+                </p>
+              </div>
+            </div>
+
+            {/* Order Items */}
+            <div className="bg-black/50 rounded-2xl p-4 mb-6 space-y-2 max-h-48 overflow-y-auto">
+              {newOrderPopup.orderItems?.length > 0 ? (
+                newOrderPopup.orderItems.map((item, i) => (
+                  <div key={i} className="flex justify-between text-sm">
+                    <span className="text-gray-300">
+                      {item.qty}x {item.name}
+                    </span>
+                    <span className="text-white font-bold">₹{item.price}</span>
+                  </div>
+                ))
+              ) : (
+                <p className="text-gray-500 text-sm text-center">No items info</p>
+              )}
+            </div>
+
+            {/* Total */}
+            <div className="flex justify-between items-center mb-6 border-t border-gray-700 pt-4">
+              <span className="text-gray-400 text-sm font-bold uppercase tracking-widest">
+                Total
+              </span>
+              <span className="text-primary font-extrabold text-2xl">
+                ₹{newOrderPopup.totalPrice}
+              </span>
+            </div>
+
+            {/* Buttons */}
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setNewOrderPopup(null);
+                  setActiveTab("overview");
+                }}
+                className="flex-1 bg-primary hover:bg-primary/80 text-white font-extrabold py-3 rounded-xl uppercase tracking-widest text-[11px] transition-all"
+              >
+                ✅ Accept
+              </button>
+              <button
+                onClick={() => setNewOrderPopup(null)}
+                className="flex-1 bg-gray-800 hover:bg-gray-700 text-gray-400 font-extrabold py-3 rounded-xl uppercase tracking-widest text-[11px] transition-all"
+              >
+                Dismiss
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
 
       <ItemModal
         showModal={showModal}

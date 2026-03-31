@@ -9,9 +9,9 @@ const ChatBot = () => {
 
   const [messages, setMessages] = useState([
     {
-      text: `Namaste${
+      text: `สวัสดี${
         userInfo ? " " + userInfo.name : ""
-      }! 🙏 I am SwadKart Genie 🧞‍♂️. Looking for a spicy recommendation or need help with an order?`,
+      }ไอไก่`,
       sender: "bot",
     },
   ]);
@@ -62,7 +62,7 @@ const ChatBot = () => {
           sender: "bot",
         },
       ]);
-    } catch (error) {
+    } catch  {
       setMessages((prev) => [
         ...prev,
         {

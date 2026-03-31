@@ -51,7 +51,7 @@ const RestaurantMenu = () => {
         const menuData = await menuRes.json();
         setRestaurant(resData.data || resData);
         setMenu(Array.isArray(menuData) ? menuData : menuData.products || []);
-      } catch (error) {
+      } catch  {
         toast.error("Error loading menu");
       } finally {
         setLoading(false);

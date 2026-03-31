@@ -55,7 +55,7 @@ const OrderDetails = () => {
         } else {
           toast.error(data.message || "Order not found");
         }
-      } catch (err) {
+      } catch  {
         toast.error("Network radar interference");
       } finally {
         setLoading(false);
