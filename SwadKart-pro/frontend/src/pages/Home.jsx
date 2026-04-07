@@ -16,7 +16,8 @@ const STATIC_MENU = [
     price: 35,
     description: "กะหรี่ กะหรี่",
     category: "กะหรี่",
-    image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR7hy7UnEXMptZHRNedxd7cVJmqtfJuarv5kg&s",
+    image:
+      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR7hy7UnEXMptZHRNedxd7cVJmqtfJuarv5kg&s",
     isVeg: true,
     inStock: true,
   },
@@ -26,7 +27,8 @@ const STATIC_MENU = [
     price: 60,
     description: "กะหรี่ กะหรี่ กะหรี่",
     category: "กะหรี่",
-    image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR7hy7UnEXMptZHRNedxd7cVJmqtfJuarv5kg&s",
+    image:
+      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR7hy7UnEXMptZHRNedxd7cVJmqtfJuarv5kg&s",
     isVeg: true,
     inStock: true,
   },
@@ -36,7 +38,8 @@ const STATIC_MENU = [
     price: 50,
     description: "กะหรี่ กะหรี่",
     category: "กะหรี่",
-    image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR7hy7UnEXMptZHRNedxd7cVJmqtfJuarv5kg&s",
+    image:
+      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR7hy7UnEXMptZHRNedxd7cVJmqtfJuarv5kg&s",
     isVeg: true,
     inStock: true,
   },
@@ -65,7 +68,7 @@ const Home = () => {
     const fetchMenu = async () => {
       try {
         const res = await fetch(
-          `${BASE_URL}/api/v1/products/restaurant/${restaurantId}`
+          `${BASE_URL}/api/v1/products/restaurant/${restaurantId}`,
         );
         if (!res.ok) return;
         const data = await res.json();
@@ -92,7 +95,9 @@ const Home = () => {
 
   const categories = [
     "All",
-    ...Array.from(new Set(menuItems.map((item) => item.category).filter(Boolean))),
+    ...Array.from(
+      new Set(menuItems.map((item) => item.category).filter(Boolean)),
+    ),
   ];
 
   const filtered =
@@ -103,8 +108,7 @@ const Home = () => {
   const inStock = filtered.filter((item) => item.inStock !== false);
 
   return (
-    <div className="bg-black min-h-screen text-white pt-20">
-
+    <div className="bg-white min-h-screen text-black pt-20">
       {/* RESTAURANT HEADER */}
       <div className="max-w-7xl mx-auto px-6 pt-8 pb-4">
         <div className="flex items-center gap-4 mb-2">
@@ -171,13 +175,20 @@ const Home = () => {
               >
                 <div className="relative h-48 overflow-hidden">
                   <img
-                    src={item.image || "https://placehold.co/400x300/1a1a2e/ffffff?text=อาหาร"}
+                    src={
+                      item.image ||
+                      "https://placehold.co/400x300/1a1a2e/ffffff?text=อาหาร"
+                    }
                     alt={item.name}
                     loading="lazy"
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                   />
-                  <div className={`absolute top-3 left-3 w-5 h-5 rounded-sm border-2 flex items-center justify-center ${item.isVeg ? "border-green-500 bg-black" : "border-red-500 bg-black"}`}>
-                    <div className={`w-2.5 h-2.5 rounded-full ${item.isVeg ? "bg-green-500" : "bg-red-500"}`} />
+                  <div
+                    className={`absolute top-3 left-3 w-5 h-5 rounded-sm border-2 flex items-center justify-center ${item.isVeg ? "border-green-500 bg-black" : "border-red-500 bg-black"}`}
+                  >
+                    <div
+                      className={`w-2.5 h-2.5 rounded-full ${item.isVeg ? "bg-green-500" : "bg-red-500"}`}
+                    />
                   </div>
                 </div>
 
@@ -203,6 +214,38 @@ const Home = () => {
             ))}
           </div>
         )}
+      </div>
+
+      <div>
+        <Link
+          to={`/qrcode/${restaurantId}`}
+          className="fixed bottom-8 right-8 z-[9999] flex items-center gap-3 bg-black text-white px-6 py-4 rounded-2xl shadow-2xl border-2 border-primary hover:bg-primary transition-all group"
+        >
+          <div className="bg-primary group-hover:bg-white p-2 rounded-lg transition-colors">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke={activeCategory === "All" ? "white" : "black"}
+              className="group-hover:stroke-primary"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M3 7V5a2 2 0 0 1 2-2h2" />
+              <path d="M17 3h2a2 2 0 0 1 2 2v2" />
+              <path d="M21 17v2a2 2 0 0 1-2 2h-2" />
+              <path d="M7 21H5a2 2 0 0 1-2-2v-2" />
+              <rect width="7" height="7" x="7" y="7" rx="1" />
+            </svg>
+          </div>
+          <div className="flex flex-col items-start">
+            <span className="text-xs opacity-70">Test Link</span>
+            <span className="font-bold text-lg">ไปหน้า QR Code</span>
+          </div>
+        </Link>
       </div>
     </div>
   );

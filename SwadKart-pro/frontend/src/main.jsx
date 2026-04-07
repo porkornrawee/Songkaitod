@@ -36,6 +36,6 @@ ReactDOM.createRoot(document.getElementById("root")).render(
         </BrowserRouter>
       </GoogleOAuthProvider>
     </Provider>
-  </React.StrictMode>
+  </React.StrictMode>,
 );
 /* trigger v2 */

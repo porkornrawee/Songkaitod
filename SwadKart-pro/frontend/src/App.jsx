@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, Outlet, useLocation } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { toast } from "react-hot-toast";
 import { Fingerprint, LogOut, Lock, Loader } from "lucide-react"; // Icons
+import QrCodePage from "./pages/QrCode";
 
 // ⚡ Lazy Load Pages for Performance
 const Home = lazy(() => import("./pages/Home"));
@@ -92,9 +93,11 @@ function App() {
     // Notification permission is now requested only when user is logged in
     // Dynamic import to reduce initial bundle (~5KB saved)
     if (userInfo) {
-      import("./components/notificationHelper").then(({ requestNotificationPermission }) => {
-        requestNotificationPermission();
-      });
+      import("./components/notificationHelper").then(
+        ({ requestNotificationPermission }) => {
+          requestNotificationPermission();
+        },
+      );
     }
 
     // ⚡ Dynamic import: Socket.IO is loaded only when user is logged in (~100KB saved from initial bundle)
@@ -104,11 +107,13 @@ function App() {
         socket = io(BASE_URL);
         socket.emit("joinOrder", userInfo._id);
         socket.on("orderUpdated", (order) => {
-          import("./components/notificationHelper").then(({ sendNotification }) => {
-            sendNotification(`SwadKart: Order Update! 🛵`, {
-              body: `Your Order #${order._id.slice(-6).toUpperCase()} is now "${order.orderStatus}".`,
-            });
-          });
+          import("./components/notificationHelper").then(
+            ({ sendNotification }) => {
+              sendNotification(`SwadKart: Order Update! 🛵`, {
+                body: `Your Order #${order._id.slice(-6).toUpperCase()} is now "${order.orderStatus}".`,
+              });
+            },
+          );
           const audio = new Audio("/notification.mp3");
           audio.play().catch(() => console.log("Audio alert blocked"));
         });
@@ -127,7 +132,8 @@ function App() {
   const handleUnlock = async () => {
     try {
       // Dynamic import: biometricService only loaded when lock screen is shown (~5KB saved)
-      const { authenticateBiometric } = await import("./utils/biometricService");
+      const { authenticateBiometric } =
+        await import("./utils/biometricService");
       const success = await authenticateBiometric();
       if (success) {
         setIsLocked(false);
@@ -236,6 +242,7 @@ function App() {
                 <Route path="/" element={<Home />} />
                 <Route path="/search" element={<Home />} />
                 <Route path="/restaurant/:id" element={<RestaurantMenu />} />
+                <Route path="/qrcode/:restaurantId" element={<QrCodePage />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/cart" element={<Cart />} />
