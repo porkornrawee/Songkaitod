@@ -15,9 +15,58 @@ import {
 import { BASE_URL } from "../config";
 import { toast } from "react-hot-toast";
 
-// Modular Components
 import MenuHero from "../components/restaurant/MenuHero";
 import MenuFilters from "../components/restaurant/MenuFilters";
+
+// ===================================================
+// 🍽️ Static menu fallback — แก้ตรงนี้ได้เลย
+// ===================================================
+const STATIC_MENU = [
+  {
+    _id: "1",
+    name: "กะหรี่ไก่",
+    price: 35,
+    description: "ไก่ทอดจากกะหรี่ หอมกรอบ",
+    category: "อาหารทานเล่น",
+    image: "https://placehold.co/600x400/1a1a2e/ffffff?text=กะหรี่ไก่",
+    isVeg: false,
+    countInStock: 100,
+    variants: [],
+    addons: [],
+  },
+  {
+    _id: "2",
+    name: "ข้าวผัด",
+    price: 60,
+    description: "ข้าวผัดหมู ไข่ดาว หอมหัวใหญ่",
+    category: "อาหารจานเดียว",
+    image: "https://placehold.co/600x400/1a1a2e/ffffff?text=ข้าวผัด",
+    isVeg: false,
+    countInStock: 100,
+    variants: [],
+    addons: [],
+  },
+  {
+    _id: "3",
+    name: "ส้มตำ",
+    price: 50,
+    description: "ส้มตำไทย รสจัดจ้าน",
+    category: "อาหารจานเดียว",
+    image: "https://placehold.co/600x400/1a1a2e/ffffff?text=ส้มตำ",
+    isVeg: true,
+    countInStock: 100,
+    variants: [],
+    addons: [],
+  },
+  // ✅ เพิ่มเมนูได้เรื่อยๆ ตรงนี้
+];
+
+const STATIC_RESTAURANT = {
+  name: "ซ่องไก่ทอด",
+  isOpenNow: true,
+  rating: 4.5,
+  image: "",
+};
 
 const RestaurantMenu = () => {
   const { id } = useParams();
@@ -25,42 +74,45 @@ const RestaurantMenu = () => {
   const navigate = useNavigate();
   const { userInfo } = useSelector((state) => state.user);
 
-  const [restaurant, setRestaurant] = useState(null);
-  const [menu, setMenu] = useState([]);
+  const [restaurant, setRestaurant] = useState(STATIC_RESTAURANT);
+  const [menu, setMenu] = useState(STATIC_MENU);
   const [searchTerm, setSearchTerm] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [isVegOnly, setIsVegOnly] = useState(false);
 
-  // Modal States
   const [showModal, setShowModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [selectedVariant, setSelectedVariant] = useState(null);
   const [selectedAddons, setSelectedAddons] = useState([]);
   const [finalPrice, setFinalPrice] = useState(0);
 
-  // 1. Data Fetch
+  // ลอง fetch จาก API ถ้าได้ก็ใช้ ถ้าไม่ได้ก็ใช้ static
   useEffect(() => {
     const fetchData = async () => {
       try {
-        setLoading(true);
         const [resRes, menuRes] = await Promise.all([
           fetch(`${BASE_URL}/api/v1/users/${id}`),
           fetch(`${BASE_URL}/api/v1/products/restaurant/${id}`),
         ]);
         const resData = await resRes.json();
         const menuData = await menuRes.json();
-        setRestaurant(resData.data || resData);
-        setMenu(Array.isArray(menuData) ? menuData : menuData.products || []);
-      } catch  {
-        toast.error("Error loading menu");
-      } finally {
-        setLoading(false);
+
+        const fetchedRestaurant = resData.data || resData;
+        if (fetchedRestaurant?.name) setRestaurant(fetchedRestaurant);
+
+        const fetchedMenu = Array.isArray(menuData)
+          ? menuData
+          : menuData.products || [];
+        if (fetchedMenu.length > 0) setMenu(fetchedMenu);
+      } catch {
+        // ใช้ static menu แทน ไม่ต้องแสดง error
+        console.log("ใช้ static menu แทน");
       }
     };
     fetchData();
   }, [id]);
 
-  // 2. Socket Connection
+  // Socket
   useEffect(() => {
     const socket = io(BASE_URL);
     socket.on("productUpdated", (updated) => {
@@ -71,7 +123,6 @@ const RestaurantMenu = () => {
     return () => socket.disconnect();
   }, []);
 
-  // 3. Categorization Logic
   const categorizedMenu = useMemo(() => {
     let filtered = menu.filter(
       (it) =>
@@ -87,7 +138,6 @@ const RestaurantMenu = () => {
     return groups;
   }, [menu, searchTerm, isVegOnly]);
 
-  // 4. Price Logic
   useEffect(() => {
     if (!selectedItem) return;
     let price = selectedVariant
@@ -102,10 +152,6 @@ const RestaurantMenu = () => {
 
   const handleAddToCartClick = (item) => {
     if (item.countInStock === 0) return;
-    if (!userInfo) {
-      navigate("/login");
-      return;
-    }
     if (item.variants?.length > 0 || item.addons?.length > 0) {
       setSelectedItem(item);
       setSelectedVariant(item.variants?.[0] || null);
@@ -207,7 +253,7 @@ const RestaurantMenu = () => {
                           {item.name}
                         </h3>
                         <span className="text-xl font-extrabold text-white italic">
-                          ₹{item.price}
+                          ฿{item.price}
                         </span>
                       </div>
                       <p className="text-gray-500 text-xs font-bold italic mb-6 line-clamp-2 leading-relaxed">
@@ -243,7 +289,6 @@ const RestaurantMenu = () => {
         )}
       </div>
 
-      {/* 🥘 Customization Modal */}
       {showModal && selectedItem && (
         <div className="fixed inset-0 bg-black/95 backdrop-blur-sm flex justify-center items-center z-[9999] p-4 animate-in fade-in zoom-in duration-300">
           <div className="bg-gray-900 w-full max-w-lg rounded-2xl border border-gray-800 shadow-2xl relative flex flex-col max-h-[90vh]">
@@ -265,7 +310,6 @@ const RestaurantMenu = () => {
             </div>
 
             <div className="p-8 overflow-y-auto no-scrollbar space-y-8 flex-1">
-              {/* Variants */}
               {selectedItem.variants?.length > 0 && (
                 <div className="space-y-4">
                   <p className="text-[10px] font-extrabold text-gray-500 uppercase tracking-[0.2em] flex items-center gap-2">
@@ -299,7 +343,7 @@ const RestaurantMenu = () => {
                           </span>
                         </div>
                         <span className="font-extrabold italic">
-                          ₹{v.price}
+                          ฿{v.price}
                         </span>
                         <input
                           type="radio"
@@ -313,7 +357,6 @@ const RestaurantMenu = () => {
                 </div>
               )}
 
-              {/* Addons */}
               {selectedItem.addons?.length > 0 && (
                 <div className="space-y-4">
                   <p className="text-[10px] font-extrabold text-gray-500 uppercase tracking-[0.2em] flex items-center gap-2">
@@ -351,7 +394,7 @@ const RestaurantMenu = () => {
                             </span>
                           </div>
                           <span className="font-extrabold italic text-gray-400">
-                            +₹{a.price}
+                            +฿{a.price}
                           </span>
                           <input
                             type="checkbox"
@@ -380,7 +423,7 @@ const RestaurantMenu = () => {
               >
                 <span>Add to Cart</span>
                 <span className="bg-black/30 px-3 py-1 rounded-lg border border-white/10">
-                  ₹{finalPrice}
+                  ฿{finalPrice}
                 </span>
               </button>
             </div>

@@ -34,8 +34,6 @@ import Navbar from "./components/Navbar";
 
 // ⚡ Lazy load below-the-fold components for faster initial render
 const Footer = lazy(() => import("./components/Footer"));
-const ChatBot = lazy(() => import("./components/ChatBot"));
-
 // 🌀 Loading Spinner Component
 const PageLoader = () => (
   <div className="flex h-screen w-full items-center justify-center bg-black text-primary">
@@ -301,7 +299,6 @@ function App() {
           {/* ✅ FIXED: Footer aur Chatbot ab Admin Panel me bhi dikhenge */}
           <Suspense fallback={null}>
             <Footer />
-            <ChatBot />
           </Suspense>
         </>
       )}
