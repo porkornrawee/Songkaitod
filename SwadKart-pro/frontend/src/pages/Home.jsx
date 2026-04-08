@@ -75,7 +75,7 @@ const Home = () => {
         if (Array.isArray(data) && data.length > 0) {
           setMenuItems(data);
         }
-      } catch (error) {
+      } catch {
         console.log("ใช้ static menu แทน");
       }
     };
@@ -108,7 +108,7 @@ const Home = () => {
   const inStock = filtered.filter((item) => item.inStock !== false);
 
   return (
-    <div className="bg-white min-h-screen text-black pt-20">
+    <div className="bg-black min-h-screen text-white pt-20">
       {/* RESTAURANT HEADER */}
       <div className="max-w-7xl mx-auto px-6 pt-8 pb-4">
         <div className="flex items-center gap-4 mb-2">
@@ -193,7 +193,7 @@ const Home = () => {
                 </div>
 
                 <div className="p-5">
-                  <h3 className="text-lg font-bold mb-1 group-hover:text-primary transition-colors">
+                  <h3 className="text-lg font-bold mb-1 group-hover:text-primary transition-colors text-white">
                     {item.name}
                   </h3>
                   {item.description && (
@@ -216,37 +216,36 @@ const Home = () => {
         )}
       </div>
 
-      <div>
-        <Link
-          to={`/qrcode/${restaurantId}`}
-          className="fixed bottom-8 right-8 z-[9999] flex items-center gap-3 bg-black text-white px-6 py-4 rounded-2xl shadow-2xl border-2 border-primary hover:bg-primary transition-all group"
-        >
-          <div className="bg-primary group-hover:bg-white p-2 rounded-lg transition-colors">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke={activeCategory === "All" ? "white" : "black"}
-              className="group-hover:stroke-primary"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M3 7V5a2 2 0 0 1 2-2h2" />
-              <path d="M17 3h2a2 2 0 0 1 2 2v2" />
-              <path d="M21 17v2a2 2 0 0 1-2 2h-2" />
-              <path d="M7 21H5a2 2 0 0 1-2-2v-2" />
-              <rect width="7" height="7" x="7" y="7" rx="1" />
-            </svg>
-          </div>
-          <div className="flex flex-col items-start">
-            <span className="text-xs opacity-70">Test Link</span>
-            <span className="font-bold text-lg">ไปหน้า QR Code</span>
-          </div>
-        </Link>
-      </div>
+      {/* QR CODE BUTTON */}
+      <Link
+        to={`/qrcode/${restaurantId}`}
+        className="fixed bottom-8 right-8 z-[9999] flex items-center gap-3 bg-black text-white px-6 py-4 rounded-2xl shadow-2xl border-2 border-primary hover:bg-primary transition-all group"
+      >
+        <div className="bg-primary group-hover:bg-white p-2 rounded-lg transition-colors">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="white"
+            className="group-hover:stroke-primary"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M3 7V5a2 2 0 0 1 2-2h2" />
+            <path d="M17 3h2a2 2 0 0 1 2 2v2" />
+            <path d="M21 17v2a2 2 0 0 1-2 2h-2" />
+            <path d="M7 21H5a2 2 0 0 1-2-2v-2" />
+            <rect width="7" height="7" x="7" y="7" rx="1" />
+          </svg>
+        </div>
+        <div className="flex flex-col items-start">
+          <span className="text-xs opacity-70">Test Link</span>
+          <span className="font-bold text-lg">ไปหน้า QR Code</span>
+        </div>
+      </Link>
     </div>
   );
 };
