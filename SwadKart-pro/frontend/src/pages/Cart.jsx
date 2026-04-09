@@ -35,16 +35,10 @@ const Cart = () => {
   // --- 3. Calculations ---
   const itemsPrice = cartItems.reduce(
     (acc, item) => acc + item.price * item.qty,
-    0
+    0,
   );
 
-  // 5% Tax
-  const taxPrice = Number((0.05 * itemsPrice).toFixed(2));
-
-  // Free shipping over ₹500, else ₹40
-  const shippingPrice = itemsPrice > 500 ? 0 : 40;
-
-  const totalBeforeDiscount = itemsPrice + taxPrice + shippingPrice;
+  const totalBeforeDiscount = itemsPrice;
 
   // Ensure total never goes below 0
   const totalPrice = Math.max(0, totalBeforeDiscount - discount).toFixed(2);
@@ -130,7 +124,7 @@ const Cart = () => {
         localStorage.setItem("appliedCoupon", JSON.stringify(codeToApply));
 
         toast.success(
-          `Coupon ${codeToApply} Applied! Saved ₹${data.discountAmount}`
+          `Coupon ${codeToApply} Applied! Saved ₹${data.discountAmount}`,
         );
       } else {
         // Reset if invalid
@@ -219,7 +213,7 @@ const Cart = () => {
                     {item.name}
                   </Link>
                   <p className="text-primary font-bold text-lg mt-1">
-                    ₹{item.price}
+                    ฿{item.price}
                   </p>
 
                   {/* Variants & Addons Display */}
@@ -301,34 +295,8 @@ const Cart = () => {
                 {/* Subtotal */}
                 <div className="flex justify-between text-xs font-bold text-gray-500 uppercase tracking-wider">
                   <span>Subtotal</span>
-                  <span className="text-white">₹{itemsPrice.toFixed(2)}</span>
+                  <span className="text-white">฿{itemsPrice.toFixed(2)}</span>
                 </div>
-
-                {/* GST */}
-                <div className="flex justify-between text-xs font-bold text-gray-500 uppercase tracking-wider">
-                  <span>GST (5%)</span>
-                  <span className="text-white">₹{taxPrice.toFixed(2)}</span>
-                </div>
-
-                {/* Delivery Fee */}
-                <div className="flex justify-between text-xs font-bold text-gray-500 uppercase tracking-wider">
-                  <span>Delivery Fee</span>
-                  <span
-                    className={
-                      shippingPrice === 0 ? "text-green-500" : "text-white"
-                    }
-                  >
-                    {shippingPrice === 0 ? "FREE" : `₹${shippingPrice}`}
-                  </span>
-                </div>
-
-                {/* Discount Display */}
-                {discount > 0 && (
-                  <div className="flex justify-between text-xs font-black text-green-500 uppercase tracking-wider animate-pulse">
-                    <span>Coupon ({appliedCoupon})</span>
-                    <span>- ₹{discount}</span>
-                  </div>
-                )}
 
                 {/* Total */}
                 <div className="border-t border-gray-800 pt-5 flex justify-between items-end">
@@ -336,22 +304,10 @@ const Cart = () => {
                     To Pay
                   </span>
                   <span className="text-4xl font-extrabold text-primary italic tracking-tighter">
-                    ₹{totalPrice}
+                    ฿{totalPrice}
                   </span>
                 </div>
               </div>
-
-              {/* 🎟️ Coupon Component */}
-              <CouponSection
-                couponCode={couponCode}
-                setCouponCode={setCouponCode}
-                applyHandler={applyCouponHandler}
-                removeHandler={removeCouponHandler}
-                availableCoupons={availableCoupons}
-                appliedCoupon={appliedCoupon}
-                loading={loading}
-                discount={discount}
-              />
 
               {/* Checkout Button */}
               <button
