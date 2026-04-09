@@ -20,36 +20,22 @@ const MenuHero = ({ restaurant }) => {
       {/* 🌑 Gradient Overlay for Text Readability */}
       <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent flex flex-col justify-end p-6 md:p-12">
         <div className="max-w-7xl mx-auto w-full">
-          {/* Restaurant Name */}
-          <h1 className="text-4xl md:text-7xl font-black uppercase italic tracking-tighter mb-4 text-white drop-shadow-2xl">
-            {restaurant.name}
-          </h1>
+          {/* Restaurant Name & Price */}
+          <div className="flex flex-wrap items-center gap-8 mb-4">
+            <h1 className="text-4xl md:text-7xl font-black uppercase italic tracking-tighter text-white drop-shadow-2xl">
+              {restaurant.name}
+            </h1>
+
+            <span className="text-xl md:text-3xl font-bold text-green-400 bg-black/40 backdrop-blur-sm px-4 py-1.5 rounded-full shadow-lg border border-green-400/30">
+              {restaurant.price || "฿ 35"}
+            </span>
+          </div>
 
           {/* Cuisine / Description */}
           <p className="text-gray-300 text-sm md:text-lg mb-6 font-medium tracking-wide flex items-center gap-2 uppercase">
             <UtensilsCrossed size={16} className="text-primary" />
             {restaurant.cuisine || "Multi-Cuisine • Fast Food • Beverages"}
           </p>
-
-          {/* Meta Info Badges */}
-          <div className="flex flex-wrap gap-4 md:gap-8 text-sm items-center font-bold">
-            {/* Rating Badge */}
-            <span className="bg-green-600 px-3 py-1.5 rounded-xl flex items-center gap-1.5 shadow-lg shadow-green-600/20 text-white">
-              <Star size={16} fill="white" /> {restaurant.rating || "4.5"}
-            </span>
-
-            {/* Location */}
-            <span className="flex items-center gap-2 text-gray-300 md:border-l border-gray-600 md:pl-8">
-              <MapPin size={20} className="text-primary" />
-              {restaurant.address || restaurant.location || "Jaipur, Rajasthan"}
-            </span>
-
-            {/* Time */}
-            <span className="flex items-center gap-2 text-gray-300 md:border-l border-gray-600 md:pl-8">
-              <Clock size={20} className="text-primary" />
-              {restaurant.deliveryTime || "30-40"} MINS
-            </span>
-          </div>
         </div>
       </div>
     </div>

@@ -9,14 +9,13 @@ import {
   X,
   Check,
   ChevronRight,
-  AlertCircle,
   ShoppingBag,
 } from "lucide-react";
 import { BASE_URL } from "../config";
 import { toast } from "react-hot-toast";
 
 import MenuHero from "../components/restaurant/MenuHero";
-import MenuFilters from "../components/restaurant/MenuFilters";
+import SelectItem from "../components/restaurant/SelectItem";
 
 // ===================================================
 // 🍽️ Static menu fallback — แก้ตรงนี้ได้เลย
@@ -27,36 +26,11 @@ const STATIC_MENU = [
     name: "กะหรี่ไก่",
     price: 35,
     description: "ไก่ทอดจากกะหรี่ หอมกรอบ",
-    category: "อาหารทานเล่น",
-    image: "https://placehold.co/600x400/1a1a2e/ffffff?text=กะหรี่ไก่",
-    isVeg: false,
-    countInStock: 100,
-    variants: [],
-    addons: [],
-  },
-  {
-    _id: "2",
-    name: "ข้าวผัด",
-    price: 60,
-    description: "ข้าวผัดหมู ไข่ดาว หอมหัวใหญ่",
-    category: "อาหารจานเดียว",
-    image: "https://placehold.co/600x400/1a1a2e/ffffff?text=ข้าวผัด",
-    isVeg: false,
-    countInStock: 100,
-    variants: [],
-    addons: [],
-  },
-  {
-    _id: "3",
-    name: "ส้มตำ",
-    price: 50,
-    description: "ส้มตำไทย รสจัดจ้าน",
-    category: "อาหารจานเดียว",
-    image: "https://placehold.co/600x400/1a1a2e/ffffff?text=ส้มตำ",
-    isVeg: true,
-    countInStock: 100,
-    variants: [],
-    addons: [],
+    addons: [
+      { _id: "a1", name: "ชีส", price: 10 },
+      { _id: "a2", name: "บาร์บิคิว", price: 10 },
+      { _id: "a3", name: "ข้าวโพด", price: 10 },
+    ],
   },
   // ✅ เพิ่มเมนูได้เรื่อยๆ ตรงนี้
 ];
@@ -117,7 +91,7 @@ const RestaurantMenu = () => {
     const socket = io(BASE_URL);
     socket.on("productUpdated", (updated) => {
       setMenu((prev) =>
-        prev.map((it) => (it._id === updated._id ? { ...it, ...updated } : it))
+        prev.map((it) => (it._id === updated._id ? { ...it, ...updated } : it)),
       );
     });
     return () => socket.disconnect();
@@ -127,7 +101,7 @@ const RestaurantMenu = () => {
     let filtered = menu.filter(
       (it) =>
         it.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
-        (!isVegOnly || it.isVeg)
+        (!isVegOnly || it.isVeg),
     );
     const groups = {};
     filtered.forEach((it) => {
@@ -145,7 +119,7 @@ const RestaurantMenu = () => {
       : Number(selectedItem.price);
     const addonsPrice = selectedAddons.reduce(
       (acc, a) => acc + Number(a.price),
-      0
+      0,
     );
     setFinalPrice(price + addonsPrice);
   }, [selectedVariant, selectedAddons, selectedItem]);
@@ -171,7 +145,7 @@ const RestaurantMenu = () => {
         selectedVariant,
         selectedAddons,
         qty: 1,
-      })
+      }),
     );
     setShowModal(false);
     toast.success("Customized dish added! 🛒");
@@ -190,14 +164,7 @@ const RestaurantMenu = () => {
   return (
     <div className="bg-black min-h-screen text-white pb-20 pt-24 font-sans">
       <MenuHero restaurant={restaurant} />
-      <MenuFilters
-        searchTerm={searchTerm}
-        setSearchTerm={setSearchTerm}
-        isVegOnly={isVegOnly}
-        setIsVegOnly={setIsVegOnly}
-      />
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {Object.keys(categorizedMenu).length === 0 ? (
           <div className="text-center py-24 bg-gray-900 rounded-2xl border-2 border-dashed border-gray-800 shadow-xl">
             <UtensilsCrossed size={48} className="mx-auto text-gray-700 mb-4" />
@@ -208,228 +175,15 @@ const RestaurantMenu = () => {
         ) : (
           Object.entries(categorizedMenu).map(([category, items]) => (
             <section key={category} className="mb-16">
-              <h2 className="text-2xl font-extrabold uppercase italic text-white mb-8 border-l-4 border-primary pl-4 flex items-center gap-3">
-                {category}{" "}
-                <span className="text-xs text-gray-400 font-bold bg-gray-900 px-3 py-1 rounded-lg border border-gray-800 not-italic tracking-normal">
-                  {items.length}
-                </span>
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              <div className="grid grid-cols-1 gap-8">
                 {items.map((item) => (
-                  <div
-                    key={item._id}
-                    className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden group flex flex-col shadow-2xl relative hover:border-primary/40 transition-all duration-300"
-                  >
-                    <div className="relative h-52 overflow-hidden">
-                      <img
-                        src={item.image || "https://placehold.co/600x400"}
-                        className={`w-full h-full object-cover transition-all duration-700 ${
-                          item.countInStock === 0
-                            ? "grayscale opacity-20"
-                            : "group-hover:scale-110"
-                        }`}
-                        alt=""
-                      />
-                      {item.countInStock === 0 && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-[2px]">
-                          <span className="text-red-500 font-extrabold border-4 border-red-500 px-4 py-2 rotate-[-12deg] text-xl tracking-widest uppercase">
-                            Sold Out
-                          </span>
-                        </div>
-                      )}
-                      <span
-                        className={`absolute top-4 right-4 text-[9px] font-extrabold px-3 py-1.5 rounded-full border shadow-lg uppercase tracking-wider ${
-                          item.isVeg
-                            ? "bg-green-950/80 text-green-400 border-green-500/30 backdrop-blur-md"
-                            : "bg-red-950/80 text-red-400 border-red-500/30 backdrop-blur-md"
-                        }`}
-                      >
-                        {item.isVeg ? "VEG" : "NON-VEG"}
-                      </span>
-                    </div>
-                    <div className="p-6 flex flex-col flex-1 bg-gray-900">
-                      <div className="flex justify-between items-start mb-2">
-                        <h3 className="text-xl font-extrabold uppercase italic text-white group-hover:text-primary transition-colors leading-none">
-                          {item.name}
-                        </h3>
-                        <span className="text-xl font-extrabold text-white italic">
-                          ฿{item.price}
-                        </span>
-                      </div>
-                      <p className="text-gray-500 text-xs font-bold italic mb-6 line-clamp-2 leading-relaxed">
-                        {item.description}
-                      </p>
-                      <button
-                        onClick={() => handleAddToCartClick(item)}
-                        disabled={item.countInStock === 0}
-                        className={`mt-auto w-full font-extrabold py-4 rounded-xl transition-all uppercase text-[10px] tracking-[0.2em] flex items-center justify-center gap-2 ${
-                          item.countInStock === 0
-                            ? "bg-gray-800 text-gray-600 cursor-not-allowed"
-                            : "bg-white text-black hover:bg-primary hover:text-white shadow-lg active:scale-[0.98]"
-                        }`}
-                      >
-                        {item.countInStock === 0 ? (
-                          "Unavailable"
-                        ) : item.variants?.length > 0 ? (
-                          <>
-                            Customize <ChevronRight size={14} />
-                          </>
-                        ) : (
-                          <>
-                            Add to Cart <ShoppingBag size={14} />
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  </div>
+                  <SelectItem key={item._id} item={item} dispatch={dispatch} />
                 ))}
               </div>
             </section>
           ))
         )}
       </div>
-
-      {showModal && selectedItem && (
-        <div className="fixed inset-0 bg-black/95 backdrop-blur-sm flex justify-center items-center z-[9999] p-4 animate-in fade-in zoom-in duration-300">
-          <div className="bg-gray-900 w-full max-w-lg rounded-2xl border border-gray-800 shadow-2xl relative flex flex-col max-h-[90vh]">
-            <div className="p-8 pb-4 border-b border-gray-800 flex justify-between items-start">
-              <div>
-                <h3 className="text-2xl font-extrabold uppercase italic text-white leading-none mb-1">
-                  {selectedItem.name}
-                </h3>
-                <p className="text-primary font-bold text-xs uppercase tracking-widest">
-                  Customize your meal
-                </p>
-              </div>
-              <button
-                onClick={() => setShowModal(false)}
-                className="bg-gray-800 text-gray-400 hover:text-white p-2 rounded-lg transition-colors border border-gray-700"
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            <div className="p-8 overflow-y-auto no-scrollbar space-y-8 flex-1">
-              {selectedItem.variants?.length > 0 && (
-                <div className="space-y-4">
-                  <p className="text-[10px] font-extrabold text-gray-500 uppercase tracking-[0.2em] flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-primary"></span>
-                    Select Size
-                  </p>
-                  <div className="grid grid-cols-1 gap-3">
-                    {selectedItem.variants.map((v) => (
-                      <label
-                        key={v.name}
-                        className={`flex justify-between items-center p-4 rounded-xl border-2 transition-all cursor-pointer group ${
-                          selectedVariant === v
-                            ? "bg-primary/10 border-primary text-white shadow-lg shadow-primary/10"
-                            : "bg-black/40 border-gray-800 text-gray-500 hover:border-gray-700"
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div
-                            className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                              selectedVariant === v
-                                ? "border-primary"
-                                : "border-gray-700"
-                            }`}
-                          >
-                            {selectedVariant === v && (
-                              <div className="w-2.5 h-2.5 rounded-full bg-primary"></div>
-                            )}
-                          </div>
-                          <span className="font-bold uppercase text-xs tracking-wider">
-                            {v.name}
-                          </span>
-                        </div>
-                        <span className="font-extrabold italic">
-                          ฿{v.price}
-                        </span>
-                        <input
-                          type="radio"
-                          className="hidden"
-                          checked={selectedVariant === v}
-                          onChange={() => setSelectedVariant(v)}
-                        />
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {selectedItem.addons?.length > 0 && (
-                <div className="space-y-4">
-                  <p className="text-[10px] font-extrabold text-gray-500 uppercase tracking-[0.2em] flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-primary"></span>
-                    Add Extras
-                  </p>
-                  <div className="grid grid-cols-1 gap-3">
-                    {selectedItem.addons.map((a) => {
-                      const isSel = selectedAddons.some(
-                        (sa) => sa._id === a._id
-                      );
-                      return (
-                        <label
-                          key={a._id}
-                          className={`flex justify-between items-center p-4 rounded-xl border-2 transition-all cursor-pointer ${
-                            isSel
-                              ? "bg-primary/5 border-primary/50 text-white"
-                              : "bg-black/40 border-gray-800 text-gray-500 hover:border-gray-700"
-                          }`}
-                        >
-                          <div className="flex items-center gap-3">
-                            <div
-                              className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${
-                                isSel
-                                  ? "bg-primary border-primary"
-                                  : "border-gray-700 bg-transparent"
-                              }`}
-                            >
-                              {isSel && (
-                                <Check size={12} className="text-white" />
-                              )}
-                            </div>
-                            <span className="font-bold uppercase text-xs tracking-wider">
-                              {a.name}
-                            </span>
-                          </div>
-                          <span className="font-extrabold italic text-gray-400">
-                            +฿{a.price}
-                          </span>
-                          <input
-                            type="checkbox"
-                            className="hidden"
-                            checked={isSel}
-                            onChange={() =>
-                              setSelectedAddons((prev) =>
-                                isSel
-                                  ? prev.filter((sa) => sa._id !== a._id)
-                                  : [...prev, a]
-                              )
-                            }
-                          />
-                        </label>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="p-8 bg-gray-900 border-t border-gray-800 rounded-b-2xl">
-              <button
-                onClick={confirmCustomization}
-                className="w-full bg-primary hover:bg-red-600 text-white py-4 rounded-xl font-extrabold uppercase flex justify-between items-center px-8 transition-all active:scale-[0.98] shadow-lg shadow-primary/25 text-xs tracking-[0.2em]"
-              >
-                <span>Add to Cart</span>
-                <span className="bg-black/30 px-3 py-1 rounded-lg border border-white/10">
-                  ฿{finalPrice}
-                </span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
