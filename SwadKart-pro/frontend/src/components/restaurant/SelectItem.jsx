@@ -40,8 +40,8 @@ const SelectItem = ({ item, dispatch }) => {
   };
 
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden group flex flex-col shadow-2xl relative hover:border-primary/40 transition-all duration-300">
-      <div className="p-6 flex flex-col flex-1 bg-gray-900">
+    <div className="bg-black rounded-2xl overflow-hidden group flex flex-col shadow-2xl relative hover:border-primary/40 transition-all duration-300">
+      <div className="p-6 flex flex-col flex-1 bg-black">
         {/* Add Extras (Addons) */}
         {item.addons?.length > 0 && (
           <div className="mb-2">

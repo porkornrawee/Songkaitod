@@ -1,16 +1,9 @@
 import { useEffect, useState, useMemo } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { addToCart } from "../redux/cartSlice";
 import io from "socket.io-client";
-import {
-  Plus,
-  UtensilsCrossed,
-  X,
-  Check,
-  ChevronRight,
-  ShoppingBag,
-} from "lucide-react";
+import { UtensilsCrossed } from "lucide-react";
 import { BASE_URL } from "../config";
 import { toast } from "react-hot-toast";
 
@@ -23,9 +16,56 @@ import SelectItem from "../components/restaurant/SelectItem";
 const STATIC_MENU = [
   {
     _id: "1",
-    name: "กะหรี่ไก่",
+    name: "ไก่ทอด",
+    price: 25,
+    description: "เลือกผงได้ 2 รสชาติ",
+    addons: [
+      { _id: "a1", name: "ชีส", price: 10 },
+      { _id: "a2", name: "บาร์บิคิว", price: 10 },
+      { _id: "a3", name: "ข้าวโพด", price: 10 },
+    ],
+  },
+  {
+    _id: "2",
+    name: "ดิปชีส",
+    price: 30,
+    description: "ไก่ทอด + ดิปชีส",
+    addons: [],
+  },
+  {
+    _id: "3",
+    name: "ดิปซาวครีม",
+    price: 30,
+    description: "ไก่ทอด + ดิปซาวครีม",
+    addons: [],
+  },
+  {
+    _id: "4",
+    name: "เซต 777",
     price: 35,
-    description: "ไก่ทอดจากกะหรี่ หอมกรอบ",
+    description: "ไก่ทอด + ดิป 1 รสชาติ",
+    addons: [
+      { _id: "a1", name: "ชีส", price: 10 },
+      { _id: "a2", name: "บาร์บิคิว", price: 10 },
+      { _id: "a3", name: "ข้าวโพด", price: 10 },
+    ],
+  },
+  {
+    _id: "5",
+    name: "เซต 888",
+    price: 45,
+    description: "ไก่ทอด + ดิป 2 รสชาติ",
+    addons: [
+      { _id: "a1", name: "ชีส", price: 10 },
+      { _id: "a2", name: "บาร์บิคิว", price: 10 },
+      { _id: "a3", name: "ข้าวโพด", price: 10 },
+    ],
+  },
+  {
+    _id: "6",
+    name: "เซต 999",
+    price: 55,
+    description: "ไก่ทอด + ดิป 2 รสชาติ + ชีส",
     addons: [
       { _id: "a1", name: "ชีส", price: 10 },
       { _id: "a2", name: "บาร์บิคิว", price: 10 },
@@ -47,6 +87,7 @@ const RestaurantMenu = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { userInfo } = useSelector((state) => state.user);
+  const currentProduct = STATIC_MENU.find((item) => item._id === id);
 
   const [restaurant, setRestaurant] = useState(STATIC_RESTAURANT);
   const [menu, setMenu] = useState(STATIC_MENU);
@@ -124,10 +165,14 @@ const RestaurantMenu = () => {
     setFinalPrice(price + addonsPrice);
   }, [selectedVariant, selectedAddons, selectedItem]);
 
+  if (!currentProduct) {
+    return <div className="text-white text-center mt-20">ไม่พบเมนูนี้</div>;
+  }
+
   const handleAddToCartClick = (item) => {
     if (item.countInStock === 0) return;
     if (item.variants?.length > 0 || item.addons?.length > 0) {
-      setSelectedItem(item);
+      setSelectedItem(currentProduct);
       setSelectedVariant(item.variants?.[0] || null);
       setSelectedAddons([]);
       setShowModal(true);
@@ -164,6 +209,28 @@ const RestaurantMenu = () => {
   return (
     <div className="bg-black min-h-screen text-white pb-20 pt-24 font-sans">
       <MenuHero restaurant={restaurant} />
+      <div className="max-w-7xl mx-auto px-8 sm:px-6 lg:px-8 mt-8">
+        <Link
+          to="/"
+          className="text-gray-400 hover:text-white mb-6 inline-block font-bold"
+        >
+          &larr; กลับไปหน้ารวมเมนู
+        </Link>
+
+        <div className="flex justify-between items-center mb-2">
+          <div className="text-4xl font-extrabold text-white mb-0">
+            {currentProduct.name}
+          </div>
+          <div className="text-3xl font-extrabold text-primary">
+            ฿{currentProduct.price}
+          </div>
+        </div>
+
+        <p className="text-gray-400 text-lg mb-2">
+          {currentProduct.description || "ไม่มีคำอธิบายเพิ่มเติม"}
+        </p>
+      </div>
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {Object.keys(categorizedMenu).length === 0 ? (
           <div className="text-center py-24 bg-gray-900 rounded-2xl border-2 border-dashed border-gray-800 shadow-xl">
@@ -176,9 +243,11 @@ const RestaurantMenu = () => {
           Object.entries(categorizedMenu).map(([category, items]) => (
             <section key={category} className="mb-16">
               <div className="grid grid-cols-1 gap-8">
-                {items.map((item) => (
-                  <SelectItem key={item._id} item={item} dispatch={dispatch} />
-                ))}
+                <SelectItem
+                  key={currentProduct._id}
+                  item={currentProduct}
+                  dispatch={dispatch}
+                />
               </div>
             </section>
           ))

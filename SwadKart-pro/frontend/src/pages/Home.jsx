@@ -13,7 +13,7 @@ const STATIC_MENU = [
   {
     _id: "1",
     name: "ไก่ทอด",
-    price: 35,
+    price: 25,
     description: "เลือกผงได้ 2 รสชาติ",
     category: "ไก่ทอด",
     image: "",
@@ -23,7 +23,7 @@ const STATIC_MENU = [
   {
     _id: "2",
     name: "ดิปชีส",
-    price: 60,
+    price: 30,
     description: "ไก่ทอด + ดิปชีส",
     category: "ไก่ทอด",
     image: "",
@@ -33,7 +33,7 @@ const STATIC_MENU = [
   {
     _id: "3",
     name: "ดิปซาวครีม",
-    price: 50,
+    price: 30,
     description: "ไก่ทอด + ดิปซาวครีม",
     category: "ไก่ทอด",
     image: "",
@@ -43,7 +43,7 @@ const STATIC_MENU = [
   {
     _id: "4",
     name: "เซต 777",
-    price: 50,
+    price: 35,
     description: "ไก่ทอด + ดิป 1 รสชาติ",
     category: "ไก่ทอด",
     image: "",
@@ -53,7 +53,7 @@ const STATIC_MENU = [
   {
     _id: "5",
     name: "เซต 888",
-    price: 50,
+    price: 45,
     description: "ไก่ทอด + ดิป 2 รสชาติ",
     category: "ไก่ทอด",
     image: "",
@@ -63,7 +63,7 @@ const STATIC_MENU = [
   {
     _id: "6",
     name: "เซต 999",
-    price: 50,
+    price: 55,
     description: "ไก่ทอด + ดิป 2 รสชาติ + ชีส",
     category: "ไก่ทอด",
     image: "",
@@ -190,7 +190,7 @@ const Home = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {inStock.map((item) => (
               <Link
-                to={`/restaurant/${restaurantId}`}
+                to={`/restaurant/${item._id}`}
                 key={item._id}
                 className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden hover:border-primary/50 transition-all hover:shadow-2xl hover:shadow-primary/10 group block"
               >
