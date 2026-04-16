@@ -12,34 +12,61 @@ const FALLBACK_RESTAURANT_ID = "69cb2f9b5be503cfcb84adcd";
 const STATIC_MENU = [
   {
     _id: "1",
-    name: "กะหรี่",
+    name: "ไก่ทอด",
     price: 35,
-    description: "กะหรี่ กะหรี่",
-    category: "กะหรี่",
-    image:
-      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR7hy7UnEXMptZHRNedxd7cVJmqtfJuarv5kg&s",
+    description: "เลือกผงได้ 2 รสชาติ",
+    category: "ไก่ทอด",
+    image: "",
     isVeg: true,
     inStock: true,
   },
   {
     _id: "2",
-    name: "กะหรี่",
+    name: "ดิปชีส",
     price: 60,
-    description: "กะหรี่ กะหรี่ กะหรี่",
-    category: "กะหรี่",
-    image:
-      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR7hy7UnEXMptZHRNedxd7cVJmqtfJuarv5kg&s",
+    description: "ไก่ทอด + ดิปชีส",
+    category: "ไก่ทอด",
+    image: "",
     isVeg: true,
     inStock: true,
   },
   {
     _id: "3",
-    name: "กะหรี่",
+    name: "ดิปซาวครีม",
     price: 50,
-    description: "กะหรี่ กะหรี่",
-    category: "กะหรี่",
-    image:
-      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR7hy7UnEXMptZHRNedxd7cVJmqtfJuarv5kg&s",
+    description: "ไก่ทอด + ดิปซาวครีม",
+    category: "ไก่ทอด",
+    image: "",
+    isVeg: true,
+    inStock: true,
+  },
+  {
+    _id: "4",
+    name: "เซต 777",
+    price: 50,
+    description: "ไก่ทอด + ดิป 1 รสชาติ",
+    category: "ไก่ทอด",
+    image: "",
+    isVeg: true,
+    inStock: true,
+  },
+  {
+    _id: "5",
+    name: "เซต 888",
+    price: 50,
+    description: "ไก่ทอด + ดิป 2 รสชาติ",
+    category: "ไก่ทอด",
+    image: "",
+    isVeg: true,
+    inStock: true,
+  },
+  {
+    _id: "6",
+    name: "เซต 999",
+    price: 50,
+    description: "ไก่ทอด + ดิป 2 รสชาติ + ชีส",
+    category: "ไก่ทอด",
+    image: "",
     isVeg: true,
     inStock: true,
   },
@@ -118,12 +145,6 @@ const Home = () => {
               {restaurantInfo?.name || "เมนูอาหาร"}
             </h1>
             <div className="flex items-center gap-4 mt-1 text-sm text-gray-400">
-              {restaurantInfo?.rating > 0 && (
-                <span className="flex items-center gap-1 text-yellow-400 font-bold">
-                  <Star size={14} fill="currentColor" />
-                  {restaurantInfo.rating.toFixed(1)}
-                </span>
-              )}
               <span className="flex items-center gap-1">
                 <Clock size={14} />
                 {restaurantInfo?.isOpenNow ? "เปิดให้บริการ" : "ปิดให้บริการ"}

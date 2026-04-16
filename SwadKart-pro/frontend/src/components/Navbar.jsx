@@ -35,20 +35,18 @@ const Navbar = () => {
     <nav className="bg-gray-950 text-white border-b border-gray-800 fixed w-full z-50 top-0 pt-8 md:pt-0 transition-all duration-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
-
           {/* LOGO */}
           <Link
             to="/"
             className="text-2xl font-extrabold text-primary tracking-tight flex items-center"
             onClick={closeMenu}
           >
-            Swad<span className="text-white">Kart</span>
+            Song<span className="text-white">kaitod</span>
             <span className="w-2.5 h-2.5 rounded-full bg-primary mt-4 animate-bounce"></span>
           </Link>
 
           {/* RIGHT SIDE */}
           <div className="flex items-center gap-4">
-
             {/* ถ้า login อยู่ (staff/owner) แสดง dashboard link */}
             {userInfo && (
               <div className="hidden md:flex items-center gap-4">
@@ -96,7 +94,10 @@ const Navbar = () => {
 
             {/* Cart */}
             <Link to="/cart" className="relative" aria-label="ตะกร้า">
-              <ShoppingCart size={24} className="text-gray-300 hover:text-primary transition-colors" />
+              <ShoppingCart
+                size={24}
+                className="text-gray-300 hover:text-primary transition-colors"
+              />
               {totalQty > 0 && (
                 <span className="absolute -top-2 -right-2 bg-primary text-white text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full">
                   {totalQty}
