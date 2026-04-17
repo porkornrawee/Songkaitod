@@ -135,7 +135,7 @@ const Home = () => {
   const inStock = filtered.filter((item) => item.inStock !== false);
 
   return (
-    <div className="bg-black min-h-screen text-white">
+    <div className="bg-black min-h-screen text-white pt-14">
       <Navbar />
 
       {/* RESTAURANT HEADER */}

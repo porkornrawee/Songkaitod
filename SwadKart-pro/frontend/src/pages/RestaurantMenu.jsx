@@ -14,66 +14,23 @@ const STATIC_MENU = [
   {
     _id: "1",
     name: "ไก่ทอด",
-    price: 25,
-    description: "เลือกผงได้ 2 รสชาติ",
+    price: 39,
+    description: "เลือกผง 2 รสชาติ",
     addons: [
-      { _id: "a1", name: "ชีส", price: 10 },
-      { _id: "a2", name: "บาร์บิคิว", price: 10 },
-      { _id: "a3", name: "ข้าวโพด", price: 10 },
-    ],
-  },
-  {
-    _id: "2",
-    name: "ดิปชีส",
-    price: 30,
-    description: "ไก่ทอด + ดิปชีส",
-    addons: [],
-  },
-  {
-    _id: "3",
-    name: "ดิปซาวครีม",
-    price: 30,
-    description: "ไก่ทอด + ดิปซาวครีม",
-    addons: [],
-  },
-  {
-    _id: "4",
-    name: "เซต 777",
-    price: 35,
-    description: "ไก่ทอด + ดิป 1 รสชาติ",
-    addons: [
-      { _id: "a1", name: "ชีส", price: 10 },
-      { _id: "a2", name: "บาร์บิคิว", price: 10 },
-      { _id: "a3", name: "ข้าวโพด", price: 10 },
-    ],
-  },
-  {
-    _id: "5",
-    name: "เซต 888",
-    price: 45,
-    description: "ไก่ทอด + ดิป 2 รสชาติ",
-    addons: [
-      { _id: "a1", name: "ชีส", price: 10 },
-      { _id: "a2", name: "บาร์บิคิว", price: 10 },
-      { _id: "a3", name: "ข้าวโพด", price: 10 },
-    ],
-  },
-  {
-    _id: "6",
-    name: "เซต 999",
-    price: 55,
-    description: "ไก่ทอด + ดิป 2 รสชาติ + ชีส",
-    addons: [
-      { _id: "a1", name: "ชีส", price: 10 },
-      { _id: "a2", name: "บาร์บิคิว", price: 10 },
-      { _id: "a3", name: "ข้าวโพด", price: 10 },
+      { _id: "a1", name: "ชีส", price: null },
+      { _id: "a2", name: "ปาปริก้า", price: null },
+      { _id: "a3", name: "วิงซ์แซ่บ", price: null },
+      { _id: "a4", name: "ฮอต แอนด์ สไปซี่", price: null },
+      { _id: "a5", name: "ซอสมะเขือเทศ", price: null },
+      { _id: "a6", name: "ซอสมายองเนส", price: null },
+      { _id: "a7", name: "ดิปชีส", price: 10 },
     ],
   },
   // ✅ เพิ่มเมนูได้เรื่อยๆ ตรงนี้
 ];
 
 const STATIC_RESTAURANT = {
-  name: "ซ่องไก่ทอด",
+  name: "ไก่ทอด",
   isOpenNow: true,
   rating: 4.5,
   image: "",
@@ -94,6 +51,12 @@ const RestaurantMenu = () => {
   // ลอง fetch จาก API ถ้าได้ก็ใช้ ถ้าไม่ได้ก็ใช้ static
   useEffect(() => {
     const fetchData = async () => {
+      // ถ้าไม่มี ID ก็ใช้ static menu
+      if (!id) {
+        console.log("No restaurant ID, using static menu");
+        return;
+      }
+
       try {
         const [resRes, menuRes] = await Promise.all([
           fetch(`${BASE_URL}/api/v1/users/${id}`),
@@ -155,28 +118,17 @@ const RestaurantMenu = () => {
   }
 
   return (
-    <div className="bg-black min-h-screen text-white pb-20 pt-24 font-sans">
+    <div className="bg-black min-h-screen text-white pb-20 pt-16 font-sans">
       <MenuHero restaurant={restaurant} />
       <div className="max-w-7xl mx-auto px-8 sm:px-6 lg:px-8 mt-8">
-        <Link
-          to="/"
-          className="text-gray-400 hover:text-white mb-6 inline-block font-bold"
-        >
-          &larr; กลับไปหน้ารวมเมนู
-        </Link>
-
-        <div className="flex justify-between items-center mb-2">
-          <div className="text-4xl font-extrabold text-white mb-0">
-            {currentProduct?.name || "Menu"}
-          </div>
-          <div className="text-3xl font-extrabold text-primary">
-            {currentProduct ? `฿${currentProduct.price}` : ""}
+        <div className="flex justify-between items-center mb-4">
+          <div>
+            <h1 className="text-4xl font-extrabold text-white mb-2">
+              {restaurant?.name || "เมนูอาหาร"}
+            </h1>
+            <p className="text-gray-400 text-sm">เลือกผง 2 รสชาติ</p>
           </div>
         </div>
-
-        <p className="text-gray-400 text-lg mb-2">
-          {currentProduct?.description || ""}
-        </p>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -191,9 +143,9 @@ const RestaurantMenu = () => {
           Object.entries(categorizedMenu).map(([category, items]) => (
             <section key={category} className="mb-16">
               <div className="grid grid-cols-1 gap-8">
-                
-                <SelectItem key={currentProduct._id} item={currentProduct} dispatch={dispatch} />
-                
+                {items.map((item) => (
+                  <SelectItem key={item._id} item={item} dispatch={dispatch} />
+                ))}
               </div>
             </section>
           ))

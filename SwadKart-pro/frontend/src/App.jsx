@@ -237,7 +237,7 @@ function App() {
             <Suspense fallback={<PageLoader />}>
               <Routes>
                 {/* Public Routes */}
-                <Route path="/" element={<Home />} />
+                <Route path="/" element={<RestaurantMenu />} />
                 <Route path="/search" element={<Home />} />
                 <Route path="/restaurant/:id" element={<RestaurantMenu />} />
                 <Route path="/qrcode/:restaurantId" element={<QrCodePage />} />
