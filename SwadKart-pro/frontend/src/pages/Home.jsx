@@ -2,7 +2,6 @@ import React, { useEffect, useState, useRef } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { Star, Clock, Loader2, UtensilsCrossed } from "lucide-react";
 import { BASE_URL } from "../config";
-import { toast } from "react-hot-toast";
 
 const FALLBACK_RESTAURANT_ID = "69cb2f9b5be503cfcb84adcd";
 
@@ -86,8 +85,8 @@ const Home = () => {
   const restaurantId = paramId || queryId || FALLBACK_RESTAURANT_ID;
 
   const [menuItems, setMenuItems] = useState(STATIC_MENU);
-  const [restaurantInfo, setRestaurantInfo] = useState(RESTAURANT_INFO);
-  const [loading, setLoading] = useState(false);
+  const [restaurantInfo] = useState(RESTAURANT_INFO);
+  const [loading] = useState(false);
   const [activeCategory, setActiveCategory] = useState("All");
   const socketRef = useRef(null);
 
