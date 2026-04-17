@@ -88,6 +88,17 @@ const cartSlice = createSlice({
       updateCartStorage(state.cartItems);
     },
 
+    // ✅ UPDATE QUANTITY
+    updateQty: (state, action) => {
+      const { cartUniqueId, qty } = action.payload;
+      state.cartItems = state.cartItems.map((item) =>
+        item.cartUniqueId === cartUniqueId
+          ? { ...item, qty: Math.max(1, qty) }
+          : item
+      );
+      updateCartStorage(state.cartItems);
+    },
+
     saveShippingAddress: (state, action) => {
       state.shippingAddress = action.payload;
       localStorage.setItem("shippingAddress", JSON.stringify(action.payload));
@@ -108,6 +119,7 @@ const cartSlice = createSlice({
 export const {
   addToCart,
   removeFromCart,
+  updateQty,
   saveShippingAddress,
   savePaymentMethod,
   clearCart,

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
+import qrCodeImg from "../img/qrcode.jpg";
 
 const QrCodePage = () => {
   const location = useLocation();
@@ -40,9 +41,9 @@ const QrCodePage = () => {
 
         <div style={styles.qrBox}>
           <img
-            src="./img/qrcode.jpg"
+            src={qrCodeImg}
             alt="QR Code"
-            style={{ width: 200, height: 200, display: "block" }}
+            style={{ width: 400, display: "block" }}
           />
         </div>
 
@@ -128,10 +129,9 @@ const styles = {
     lineHeight: 1,
   },
   qrBox: {
-    background: "#fff",
     borderRadius: 16,
     padding: 20,
-    marginBottom: 30,
+    marginBottom: 28,
     display: "inline-block",
   },
   timer: { fontSize: 13, color: "#555", marginBottom: 24 },

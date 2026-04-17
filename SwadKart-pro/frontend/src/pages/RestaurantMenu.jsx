@@ -4,6 +4,8 @@ import { useDispatch } from "react-redux";
 import io from "socket.io-client";
 import { UtensilsCrossed } from "lucide-react";
 import { BASE_URL } from "../config";
+import MenuHero from "../components/restaurant/MenuHero";
+import SelectItem from "../components/restaurant/SelectItem";
 
 // ===================================================
 // 🍽️ Static menu fallback — แก้ตรงนี้ได้เลย
@@ -141,10 +143,6 @@ const RestaurantMenu = () => {
     return groups;
   }, [menu, searchTerm, isVegOnly]);
 
-  if (!currentProduct) {
-    return <div className="text-white text-center mt-20">ไม่พบเมนูนี้</div>;
-  }
-
   if (loading) {
     return (
       <div className="h-screen bg-black flex flex-col items-center justify-center gap-4">
@@ -169,15 +167,15 @@ const RestaurantMenu = () => {
 
         <div className="flex justify-between items-center mb-2">
           <div className="text-4xl font-extrabold text-white mb-0">
-            {currentProduct.name}
+            {currentProduct?.name || "Menu"}
           </div>
           <div className="text-3xl font-extrabold text-primary">
-            ฿{currentProduct.price}
+            {currentProduct ? `฿${currentProduct.price}` : ""}
           </div>
         </div>
 
         <p className="text-gray-400 text-lg mb-2">
-          {currentProduct.description || "ไม่มีคำอธิบายเพิ่มเติม"}
+          {currentProduct?.description || ""}
         </p>
       </div>
 
@@ -193,9 +191,9 @@ const RestaurantMenu = () => {
           Object.entries(categorizedMenu).map(([category, items]) => (
             <section key={category} className="mb-16">
               <div className="grid grid-cols-1 gap-8">
-                {items.map((item) => (
-                  <SelectItem key={item._id} item={item} dispatch={dispatch} />
-                ))}
+                
+                <SelectItem key={currentProduct._id} item={currentProduct} dispatch={dispatch} />
+                
               </div>
             </section>
           ))

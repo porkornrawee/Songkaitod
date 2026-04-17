@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { Clock, Loader2, UtensilsCrossed } from "lucide-react";
 import { BASE_URL } from "../config";
+import Navbar from "../components/Navbar";
 
 const FALLBACK_RESTAURANT_ID = "69cb2f9b5be503cfcb84adcd";
 
@@ -134,7 +135,9 @@ const Home = () => {
   const inStock = filtered.filter((item) => item.inStock !== false);
 
   return (
-    <div className="bg-black min-h-screen text-white pt-20">
+    <div className="bg-black min-h-screen text-white">
+      <Navbar />
+
       {/* RESTAURANT HEADER */}
       <div className="max-w-7xl mx-auto px-6 pt-8 pb-4">
         <div className="flex items-center gap-4 mb-2">
