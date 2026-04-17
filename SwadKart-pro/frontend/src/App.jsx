@@ -4,12 +4,12 @@ import { useSelector, useDispatch } from "react-redux";
 import { toast } from "react-hot-toast";
 import { Fingerprint, LogOut, Lock, Loader } from "lucide-react"; // Icons
 import QrCodePage from "./pages/QrCode";
+import Cart from "./pages/Cart";
 
 // ⚡ Lazy Load Pages for Performance
 const Home = lazy(() => import("./pages/Home"));
 const Login = lazy(() => import("./pages/Login"));
 const Register = lazy(() => import("./pages/Register"));
-const Cart = lazy(() => import("./pages/Cart"));
 const Shipping = lazy(() => import("./pages/Shipping"));
 const Payment = lazy(() => import("./pages/Payment"));
 const PlaceOrder = lazy(() => import("./pages/PlaceOrder"));
@@ -244,6 +244,7 @@ function App() {
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/cart" element={<Cart />} />
+               <Route path="/qrcode" element={<QrCodePage />} />
                 <Route path="/password/forgot" element={<ForgotPassword />} />
                 <Route
                   path="/password/reset/:token"
@@ -293,6 +294,7 @@ function App() {
 
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
+              
             </Suspense>
           </main>
 

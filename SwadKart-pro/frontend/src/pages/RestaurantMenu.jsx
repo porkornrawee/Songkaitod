@@ -1,14 +1,9 @@
 import { useEffect, useState, useMemo } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
-import { useDispatch, useSelector } from "react-redux";
-import { addToCart } from "../redux/cartSlice";
+import { useParams,  Link } from "react-router-dom";
+import { useDispatch } from "react-redux";
 import io from "socket.io-client";
 import { UtensilsCrossed } from "lucide-react";
 import { BASE_URL } from "../config";
-import { toast } from "react-hot-toast";
-
-import MenuHero from "../components/restaurant/MenuHero";
-import SelectItem from "../components/restaurant/SelectItem";
 
 // ===================================================
 // 🍽️ Static menu fallback — แก้ตรงนี้ได้เลย
@@ -85,21 +80,14 @@ const STATIC_RESTAURANT = {
 const RestaurantMenu = () => {
   const { id } = useParams();
   const dispatch = useDispatch();
-  const navigate = useNavigate();
-  const { userInfo } = useSelector((state) => state.user);
+  
   const currentProduct = STATIC_MENU.find((item) => item._id === id);
 
   const [restaurant, setRestaurant] = useState(STATIC_RESTAURANT);
   const [menu, setMenu] = useState(STATIC_MENU);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [isVegOnly, setIsVegOnly] = useState(false);
-
-  const [showModal, setShowModal] = useState(false);
-  const [selectedItem, setSelectedItem] = useState(null);
-  const [selectedVariant, setSelectedVariant] = useState(null);
-  const [selectedAddons, setSelectedAddons] = useState([]);
-  const [finalPrice, setFinalPrice] = useState(0);
+  const [searchTerm] = useState("");
+  const [loading] = useState(false);
+  const [isVegOnly] = useState(false);
 
   // ลอง fetch จาก API ถ้าได้ก็ใช้ ถ้าไม่ได้ก็ใช้ static
   useEffect(() => {
@@ -153,50 +141,11 @@ const RestaurantMenu = () => {
     return groups;
   }, [menu, searchTerm, isVegOnly]);
 
-  useEffect(() => {
-    if (!selectedItem) return;
-    let price = selectedVariant
-      ? Number(selectedVariant.price)
-      : Number(selectedItem.price);
-    const addonsPrice = selectedAddons.reduce(
-      (acc, a) => acc + Number(a.price),
-      0,
-    );
-    setFinalPrice(price + addonsPrice);
-  }, [selectedVariant, selectedAddons, selectedItem]);
-
   if (!currentProduct) {
     return <div className="text-white text-center mt-20">ไม่พบเมนูนี้</div>;
   }
 
-  const handleAddToCartClick = (item) => {
-    if (item.countInStock === 0) return;
-    if (item.variants?.length > 0 || item.addons?.length > 0) {
-      setSelectedItem(currentProduct);
-      setSelectedVariant(item.variants?.[0] || null);
-      setSelectedAddons([]);
-      setShowModal(true);
-    } else {
-      dispatch(addToCart({ ...item, qty: 1 }));
-      toast.success(`${item.name} added!`);
-    }
-  };
-
-  const confirmCustomization = () => {
-    dispatch(
-      addToCart({
-        ...selectedItem,
-        price: finalPrice,
-        selectedVariant,
-        selectedAddons,
-        qty: 1,
-      }),
-    );
-    setShowModal(false);
-    toast.success("Customized dish added! 🛒");
-  };
-
-  if (loading)
+  if (loading) {
     return (
       <div className="h-screen bg-black flex flex-col items-center justify-center gap-4">
         <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
@@ -205,6 +154,7 @@ const RestaurantMenu = () => {
         </p>
       </div>
     );
+  }
 
   return (
     <div className="bg-black min-h-screen text-white pb-20 pt-24 font-sans">
@@ -243,11 +193,9 @@ const RestaurantMenu = () => {
           Object.entries(categorizedMenu).map(([category, items]) => (
             <section key={category} className="mb-16">
               <div className="grid grid-cols-1 gap-8">
-                <SelectItem
-                  key={currentProduct._id}
-                  item={currentProduct}
-                  dispatch={dispatch}
-                />
+                {items.map((item) => (
+                  <SelectItem key={item._id} item={item} dispatch={dispatch} />
+                ))}
               </div>
             </section>
           ))

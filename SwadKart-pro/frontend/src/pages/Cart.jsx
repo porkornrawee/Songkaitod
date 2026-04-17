@@ -1,331 +1,280 @@
-import React, { useEffect, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { Link, useNavigate } from "react-router-dom";
-import { addToCart, removeFromCart } from "../redux/cartSlice";
-import {
-  Trash2,
-  Plus,
-  Minus,
-  ArrowRight,
-  ShoppingBag,
-  ArrowLeft,
-} from "lucide-react";
-import { toast } from "react-hot-toast";
-
-// Config & Components
-import { BASE_URL } from "../config";
-import CouponSection from "../components/order/CouponSection";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { ShoppingBag, ArrowRight, ArrowLeft, Trash2 } from "lucide-react";
 
 const Cart = () => {
   const navigate = useNavigate();
-  const dispatch = useDispatch();
 
-  // 1. Get Cart & User Info from Redux
-  const cart = useSelector((state) => state.cart);
-  const { userInfo } = useSelector((state) => state.user);
-  const { cartItems } = cart;
+  const [items, setItems] = useState([
+    { id: 1, name: "ไก่ทอด", price: 25, qty: 1 },
+    { id: 2, name: "ดิปชีส", price: 30, qty: 1 },
+  ]);
 
-  // 2. Local State
-  const [couponCode, setCouponCode] = useState("");
-  const [discount, setDiscount] = useState(0);
-  const [appliedCoupon, setAppliedCoupon] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [availableCoupons, setAvailableCoupons] = useState([]);
+  const getTotal = () =>
+    items.reduce((sum, item) => sum + item.price * item.qty, 0);
 
-  // --- 3. Calculations ---
-  const itemsPrice = cartItems.reduce(
-    (acc, item) => acc + item.price * item.qty,
-    0,
-  );
-
-  const totalBeforeDiscount = itemsPrice;
-
-  // Ensure total never goes below 0
-  const totalPrice = Math.max(0, totalBeforeDiscount - discount).toFixed(2);
-
-  // --- 4. Fetch Coupons & Load Saved Coupon ---
-  useEffect(() => {
-    const fetchCoupons = async () => {
-      try {
-        const res = await fetch(`${BASE_URL}/api/v1/coupons/available`);
-        const data = await res.json();
-        if (res.ok) {
-          setAvailableCoupons(data);
-        }
-      } catch (error) {
-        console.error("Error fetching coupons:", error);
-      }
-    };
-
-    fetchCoupons();
-
-    // Check Local Storage for previously applied coupons
-    const savedCoupon = localStorage.getItem("appliedCoupon");
-    const savedDiscount = localStorage.getItem("couponDiscount");
-
-    if (savedCoupon && savedDiscount) {
-      setAppliedCoupon(JSON.parse(savedCoupon));
-      setCouponCode(JSON.parse(savedCoupon));
-      setDiscount(Number(savedDiscount));
-    }
-  }, []);
-
-  // --- 5. Handlers ---
-
-  const addToCartHandler = (item, qty) => {
-    if (qty > 10) return toast.error("Max limit reached (10 items)");
-    if (qty < 1) return; // Prevent going below 1 via this handler
-    dispatch(addToCart({ ...item, qty }));
-  };
-
-  const removeFromCartHandler = (cartUniqueId) => {
-    dispatch(removeFromCart(cartUniqueId));
-    toast.success("Item removed from bag");
-  };
-
-  const checkoutHandler = () => {
-    if (cartItems.length === 0) return toast.error("Cart is empty");
-    // Redirect logic
-    navigate(userInfo ? "/shipping" : "/login?redirect=/shipping");
-  };
-
-  const applyCouponHandler = async (codeOverride) => {
-    const codeToApply = codeOverride || couponCode;
-
-    if (!codeToApply) return toast.error("Enter a coupon code");
-    if (!userInfo) {
-      toast.error("Please login to verify coupon eligibility");
-      return navigate("/login?redirect=/cart");
-    }
-
-    setLoading(true);
-    try {
-      const config = {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${userInfo.token}`,
-        },
-        body: JSON.stringify({
-          code: codeToApply,
-          orderAmount: itemsPrice,
-        }),
-      };
-
-      const res = await fetch(`${BASE_URL}/api/v1/coupons/validate`, config);
-      const data = await res.json();
-
-      if (res.ok) {
-        setDiscount(data.discountAmount);
-        setAppliedCoupon(codeToApply);
-        setCouponCode(codeToApply);
-
-        localStorage.setItem("couponDiscount", data.discountAmount);
-        localStorage.setItem("appliedCoupon", JSON.stringify(codeToApply));
-
-        toast.success(
-          `Coupon ${codeToApply} Applied! Saved ₹${data.discountAmount}`,
-        );
-      } else {
-        // Reset if invalid
-        setDiscount(0);
-        setAppliedCoupon("");
-        localStorage.removeItem("couponDiscount");
-        localStorage.removeItem("appliedCoupon");
-        toast.error(data.message || "Invalid Coupon");
-      }
-    } catch (error) {
-      console.error(error);
-      toast.error("Something went wrong validating coupon");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const removeCouponHandler = () => {
-    setDiscount(0);
-    setAppliedCoupon("");
-    setCouponCode("");
-    localStorage.removeItem("couponDiscount");
-    localStorage.removeItem("appliedCoupon");
-    toast.success("Coupon Removed");
-  };
-
-  // --- 6. Render: Empty Cart State ---
-  if (cartItems.length === 0) {
-    return (
-      <div className="min-h-screen bg-black text-white flex flex-col justify-center items-center pt-20">
-        <ShoppingBag size={80} className="text-gray-800 mb-6" />
-        <h2 className="text-3xl font-extrabold italic uppercase mb-2">
-          Your Bag is Empty
-        </h2>
-        <p className="text-gray-500 mb-8">
-          Hungry? Add some delicious items now!
-        </p>
-        <Link
-          to="/"
-          className="bg-primary hover:bg-red-600 text-white px-8 py-3.5 rounded-xl font-bold uppercase transition-all shadow-lg shadow-primary/25"
-        >
-          Browse Menu
-        </Link>
-      </div>
+  const changeQty = (id, delta) => {
+    setItems((prev) =>
+      prev.map((item) =>
+        item.id === id ? { ...item, qty: Math.max(1, item.qty + delta) } : item
+      )
     );
-  }
+  };
 
-  // --- 7. Render: Main Cart UI ---
+  const removeItem = (id) => {
+    setItems((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  const handleCheckout = () => {
+    if (items.length === 0) return;
+    navigate("/qrcode", {
+      state: { items, total: getTotal() },
+    });
+  };
+
+  const total = getTotal();
+
   return (
-    <div className="min-h-screen bg-black text-white pt-28 px-4 md:px-10 pb-20 font-sans">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-8">
-          <ShoppingBag className="text-primary" size={32} />
-          <div>
-            <h1 className="text-3xl md:text-4xl font-extrabold italic uppercase tracking-tighter">
-              Your <span className="text-primary">Food Bag</span>
-            </h1>
-            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-[0.3em]">
-              Check your items before we start cooking
-            </p>
-          </div>
+    <div style={styles.wrapper}>
+      {/* Navbar */}
+      <nav style={styles.navbar}>
+        <span style={styles.logo}>
+          Song<span style={styles.logoRed}>kaitod</span>
+          <span style={styles.logoDot}>.</span>
+        </span>
+        <div style={styles.cartIconWrapper}>
+          <ShoppingBag size={24} color="#fff" />
+          <span style={styles.cartBadge}>
+            {items.reduce((s, i) => s + i.qty, 0)}
+          </span>
         </div>
+      </nav>
 
-        <div className="flex flex-col lg:flex-row gap-12">
-          {/* 🛒 Left Column: Cart Items List */}
-          <div className="lg:w-2/3 space-y-4">
-            {cartItems.map((item) => (
-              <div
-                key={item.cartUniqueId || item._id}
-                className="flex flex-col sm:flex-row items-center bg-gray-900 border border-gray-800 p-5 rounded-2xl hover:border-gray-700 transition-all group"
-              >
-                {/* Product Image */}
-                <img
-                  src={item.image}
-                  alt={item.name}
-                  className="w-24 h-24 object-cover rounded-xl mb-4 sm:mb-0 grayscale group-hover:grayscale-0 transition-all duration-500 border border-gray-800"
-                />
+      <div style={styles.content}>
+        {/* Header */}
+        <div style={styles.pageTitle}>
+          <ShoppingBag size={34} color="#ff4d4d" />
+          <h1 style={styles.titleText}>
+            YOUR <span style={styles.titleRed}>FOOD BAG</span>
+          </h1>
+        </div>
+        <p style={styles.subtitle}>CHECK YOUR ITEMS BEFORE WE START COOKING</p>
 
-                {/* Product Details */}
-                <div className="sm:ml-6 flex-1 text-center sm:text-left">
-                  <Link
-                    to={`/product/${item.product}`}
-                    className="text-lg font-bold italic uppercase text-white hover:text-primary transition-colors"
-                  >
-                    {item.name}
-                  </Link>
-                  <p className="text-primary font-bold text-lg mt-1">
-                    ฿{item.price}
-                  </p>
-
-                  {/* Variants & Addons Display */}
-                  <div className="flex flex-wrap gap-2 mt-2 justify-center sm:justify-start">
-                    {/* Size/Variant */}
-                    {item.selectedVariant && (
-                      <span className="text-[9px] bg-black/50 px-2 py-1 rounded text-gray-400 uppercase font-bold tracking-wider border border-gray-700">
-                        Size: {item.selectedVariant.name}
-                      </span>
-                    )}
-
-                    {/* Addons */}
-                    {item.selectedAddons && item.selectedAddons.length > 0 && (
-                      <div className="flex flex-wrap gap-1">
-                        {item.selectedAddons.map((addon, idx) => (
-                          <span
-                            key={idx}
-                            className="text-[9px] bg-primary/10 px-2 py-1 rounded text-primary uppercase font-bold border border-primary/20"
-                          >
-                            + {addon.name}
-                          </span>
-                        ))}
-                      </div>
-                    )}
+        {/* Layout */}
+        <div style={styles.layout}>
+          {/* Left - Items */}
+          <div style={styles.itemsCol}>
+            {items.length === 0 ? (
+              <div style={styles.emptyMsg}>ตะกร้าว่างเปล่า 🛒</div>
+            ) : (
+              items.map((item) => (
+                <div key={item.id} style={styles.cartItem}>
+                  <div style={styles.itemImg}>{item.name}</div>
+                  <div style={styles.itemInfo}>
+                    <p style={styles.itemName}>{item.name}</p>
+                    <p style={styles.itemPrice}>฿{item.price}</p>
                   </div>
-                </div>
-
-                {/* Quantity Controls & Delete */}
-                <div className="flex items-center gap-4 mt-4 sm:mt-0">
-                  <div className="flex items-center bg-black/50 border border-gray-700 rounded-xl overflow-hidden">
-                    <button
-                      onClick={() => addToCartHandler(item, item.qty - 1)}
-                      disabled={item.qty === 1}
-                      className="p-2.5 text-gray-500 hover:text-white hover:bg-gray-800 disabled:opacity-20 transition-all"
-                    >
-                      <Minus size={14} />
+                  <div style={styles.qtyControls}>
+                    <button style={styles.qtyBtn} onClick={() => changeQty(item.id, -1)}>
+                      −
                     </button>
-                    <span className="px-3 font-bold text-sm w-10 text-center text-white">
-                      {item.qty}
-                    </span>
-                    <button
-                      onClick={() => addToCartHandler(item, item.qty + 1)}
-                      className="p-2.5 text-gray-500 hover:text-white hover:bg-gray-800 transition-all"
-                    >
-                      <Plus size={14} />
+                    <span style={styles.qtyVal}>{item.qty}</span>
+                    <button style={styles.qtyBtn} onClick={() => changeQty(item.id, 1)}>
+                      +
                     </button>
                   </div>
-
-                  <button
-                    onClick={() => removeFromCartHandler(item.cartUniqueId)}
-                    className="p-3 bg-red-500/5 text-red-500 border border-red-500/10 rounded-xl hover:bg-red-500 hover:text-white transition-all shadow-sm"
-                  >
-                    <Trash2 size={18} />
+                  <button style={styles.deleteBtn} onClick={() => removeItem(item.id)}>
+                    <Trash2 size={17} color="#ff4d4d" />
                   </button>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
 
-            <Link
-              to="/"
-              className="inline-flex items-center gap-2 text-gray-500 hover:text-primary mt-6 font-bold text-xs uppercase tracking-widest transition-colors group"
-            >
-              <ArrowLeft
-                size={16}
-                className="group-hover:-translate-x-1 transition-transform"
-              />{" "}
-              Continue Shopping
-            </Link>
+            <div style={styles.continueLink} onClick={() => navigate("/")}>
+              <ArrowLeft size={13} color="#666" />
+              <span style={styles.continueTxt}>CONTINUE SHOPPING</span>
+            </div>
           </div>
 
-          {/* 🧾 Right Column: Bill Details */}
-          <div className="lg:w-1/3">
-            <div className="bg-gray-900 p-8 rounded-[2rem] border border-gray-800 sticky top-28 shadow-2xl">
-              <h2 className="text-xl font-extrabold italic uppercase border-b border-gray-800 pb-4 mb-6 text-white">
-                Bill Details
-              </h2>
-
-              <div className="space-y-4 mb-8">
-                {/* Subtotal */}
-                <div className="flex justify-between text-xs font-bold text-gray-500 uppercase tracking-wider">
-                  <span>Subtotal</span>
-                  <span className="text-white">฿{itemsPrice.toFixed(2)}</span>
-                </div>
-
-                {/* Total */}
-                <div className="border-t border-gray-800 pt-5 flex justify-between items-end">
-                  <span className="text-sm font-bold text-gray-400 uppercase italic">
-                    To Pay
-                  </span>
-                  <span className="text-4xl font-extrabold text-primary italic tracking-tighter">
-                    ฿{totalPrice}
-                  </span>
-                </div>
-              </div>
-
-              {/* Checkout Button */}
-              <button
-                onClick={checkoutHandler}
-                className="w-full bg-primary hover:bg-red-600 text-white py-4 rounded-xl font-bold uppercase text-sm tracking-[0.15em] shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2 group mt-8 active:scale-[0.98]"
-              >
-                Checkout Now{" "}
-                <ArrowRight
-                  size={18}
-                  className="group-hover:translate-x-1 transition-transform"
-                />
-              </button>
+          {/* Right - Bill */}
+          <div style={styles.billCard}>
+            <p style={styles.billTitle}>BILL DETAILS</p>
+            <div style={styles.billRow}>
+              <span style={styles.billLabel}>SUBTOTAL</span>
+              <span style={styles.billValue}>฿{total.toFixed(2)}</span>
             </div>
+            <div style={styles.billTotalRow}>
+              <span style={styles.billLabel}>TO PAY</span>
+              <span style={styles.billTotalAmount}>฿{total.toFixed(2)}</span>
+            </div>
+            <button style={styles.checkoutBtn} onClick={handleCheckout}>
+              CHECKOUT NOW
+              <ArrowRight size={18} color="#fff" />
+            </button>
           </div>
         </div>
       </div>
     </div>
   );
+};
+
+const styles = {
+  wrapper: {
+    background: "#0a0e1a",
+    minHeight: "100vh",
+    color: "#fff",
+    fontFamily: "'Segoe UI', sans-serif",
+  },
+  navbar: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: "16px 40px",
+    borderBottom: "1px solid #1e2640",
+  },
+  logo: { fontSize: 22, fontWeight: 700, color: "#fff" },
+  logoRed: { color: "#ff4d4d" },
+  logoDot: { color: "#ff4d4d" },
+  cartIconWrapper: { position: "relative", cursor: "pointer" },
+  cartBadge: {
+    position: "absolute",
+    top: -6,
+    right: -6,
+    background: "#ff4d4d",
+    color: "#fff",
+    fontSize: 11,
+    fontWeight: 700,
+    borderRadius: "50%",
+    width: 18,
+    height: 18,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  content: { padding: "28px 40px" },
+  pageTitle: { display: "flex", alignItems: "center", gap: 12, marginBottom: 6 },
+  titleText: { fontSize: 32, fontWeight: 800, margin: 0 },
+  titleRed: { color: "#ff4d4d", fontStyle: "italic" },
+  subtitle: {
+    fontSize: 12,
+    letterSpacing: 3,
+    color: "#666",
+    marginBottom: 32,
+    textTransform: "uppercase",
+  },
+  layout: {
+    display: "grid",
+    gridTemplateColumns: "1fr 320px",
+    gap: 24,
+    alignItems: "start",
+  },
+  itemsCol: { display: "flex", flexDirection: "column", gap: 16 },
+  emptyMsg: { color: "#555", fontSize: 16, padding: "40px 0" },
+  cartItem: {
+    background: "#131929",
+    borderRadius: 16,
+    padding: "20px",
+    display: "flex",
+    alignItems: "center",
+    gap: 16,
+  },
+  itemImg: {
+    width: 90,
+    height: 90,
+    background: "#1e2640",
+    borderRadius: 10,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: 13,
+    color: "#666",
+    flexShrink: 0,
+  },
+  itemInfo: { flex: 1 },
+  itemName: { fontSize: 18, fontWeight: 600, margin: "0 0 4px" },
+  itemPrice: { fontSize: 18, fontWeight: 700, color: "#ff4d4d", margin: 0 },
+  qtyControls: {
+    display: "flex",
+    alignItems: "center",
+    background: "#1e2640",
+    borderRadius: 8,
+    overflow: "hidden",
+  },
+  qtyBtn: {
+    background: "transparent",
+    border: "none",
+    color: "#fff",
+    fontSize: 18,
+    width: 36,
+    height: 36,
+    cursor: "pointer",
+  },
+  qtyVal: { width: 40, textAlign: "center", fontSize: 15, fontWeight: 600 },
+  deleteBtn: {
+    background: "#2a1520",
+    border: "none",
+    borderRadius: 8,
+    width: 40,
+    height: 40,
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    marginLeft: 12,
+  },
+  continueLink: {
+    display: "flex",
+    alignItems: "center",
+    gap: 6,
+    cursor: "pointer",
+    marginTop: 4,
+  },
+  continueTxt: { fontSize: 12, letterSpacing: 2, color: "#666" },
+  billCard: {
+    background: "#131929",
+    borderRadius: 20,
+    padding: 28,
+  },
+  billTitle: {
+    fontSize: 18,
+    fontWeight: 800,
+    letterSpacing: 1,
+    marginBottom: 20,
+    margin: "0 0 20px",
+  },
+  billRow: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: "10px 0",
+    borderBottom: "1px solid #1e2640",
+  },
+  billLabel: { fontSize: 13, color: "#aaa", letterSpacing: 1, textTransform: "uppercase" },
+  billValue: { fontSize: 14, color: "#fff", fontWeight: 600 },
+  billTotalRow: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: "16px 0 20px",
+  },
+  billTotalAmount: { fontSize: 32, fontWeight: 800, color: "#ff4d4d" },
+  checkoutBtn: {
+    width: "100%",
+    background: "#ff4d4d",
+    color: "#fff",
+    border: "none",
+    borderRadius: 10,
+    padding: "16px",
+    fontSize: 14,
+    fontWeight: 700,
+    letterSpacing: 2,
+    textTransform: "uppercase",
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+  },
 };
 
 export default Cart;
