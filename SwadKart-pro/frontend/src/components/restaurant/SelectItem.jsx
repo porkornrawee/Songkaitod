@@ -42,11 +42,11 @@ const SelectItem = ({ item, dispatch }) => {
   return (
     <div className="bg-black rounded-2xl overflow-hidden group flex flex-col shadow-2xl relative hover:border-primary/40 transition-all duration-300">
       <div className="p-6 flex flex-col flex-1 bg-black">
-        {/* Add Extras (Addons) */}
+        {/* Addons */}
         {item.addons?.length > 0 && (
           <div className="mb-2">
             <p className="text-lg font-extrabold text-gray-500 uppercase tracking-[0.1em] mb-3">
-              เลือกผง 2 รสชาติ:
+              เลือกผงได้ไม่เกิน 2 รสชาติ:
             </p>
             <ul className="space-y-3">
               {item.addons.map((a) => (
@@ -64,7 +64,39 @@ const SelectItem = ({ item, dispatch }) => {
                     <span className="font-bold">{a.name}</span>
                   </label>
                   <span className="text-gray-400 italic text-lg whitespace-nowrap">
-                    +฿{a.price}
+                    {a.price !== 0 && `+฿${a.price}`}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+
+      <div className="p-6 pt-0 flex flex-col flex-1 bg-black">
+        {/* Addons */}
+        {item.extras?.length > 0 && (
+          <div className="mb-2">
+            <p className="text-lg font-extrabold text-gray-500 uppercase tracking-[0.1em] mb-3">
+              เพิ่มเติม:
+            </p>
+            <ul className="space-y-3">
+              {item.extras.map((a) => (
+                <li
+                  key={a._id}
+                  className="flex items-center justify-between text-base"
+                >
+                  <label className="flex items-center gap-3 text-gray-300 cursor-pointer w-full">
+                    <input
+                      type="checkbox"
+                      checked={selectedAddons.some((sa) => sa._id === a._id)}
+                      onChange={() => handleAddonToggle(a)}
+                      className="accent-primary w-6 h-6 rounded cursor-pointer"
+                    />
+                    <span className="font-bold">{a.name}</span>
+                  </label>
+                  <span className="text-gray-400 italic text-lg whitespace-nowrap">
+                    {a.price !== 0 && `+฿${a.price}`}
                   </span>
                 </li>
               ))}

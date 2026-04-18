@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
 import { ArrowLeft } from "lucide-react";
+import { clearCart } from "../redux/cartSlice";
 import qrCodeImg from "../img/qrcode.jpg";
 
 const QrCodePage = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [timeLeft, setTimeLeft] = useState(300); // 5 minutes
 
   const { items = [], total = 0 } = location.state || {};
@@ -34,10 +37,9 @@ const QrCodePage = () => {
         <h2 style={styles.title}>
           สแกน QR เพื่อ<span style={styles.titleRed}>ชำระเงิน</span>
         </h2>
-        <p style={styles.amountNote}>นี่คือจำนวนเงินที่คุณต้องชำระ</p>
 
         <p style={styles.amountLabel}>TOTAL AMOUNT</p>
-        <p style={styles.amountValue}>฿{total.toFixed(2)}</p>
+        <span style={styles.amountValue}>฿{total.toFixed(2)}</span>
 
         <div style={styles.qrBox}>
           <img
@@ -72,9 +74,9 @@ const QrCodePage = () => {
           หรือ Mobile Banking ใดก็ได้
         </p>
 
-        <button style={styles.backBtn} onClick={() => navigate(-1)}>
+        <button style={styles.backBtn} onClick={() => { dispatch(clearCart()); navigate("/"); }}>
           <ArrowLeft size={15} />
-          กลับไปแก้ไขตะกร้า
+          กลับไปหน้าหลัก
         </button>
       </div>
     </div>
@@ -111,7 +113,7 @@ const styles = {
     textTransform: "uppercase",
     marginBottom: 8,
   },
-  title: { fontSize: 26, fontWeight: 800, margin: "0 0 6px" },
+  title: { fontSize: 26, fontWeight: 800, margin: "0 0 16px" },
   titleRed: { color: "#ff4d4d" },
   amountNote: { fontSize: 14, color: "#888", letterSpacing: 1, marginBottom: 18 },
   amountLabel: {
@@ -122,16 +124,16 @@ const styles = {
     marginBottom: 6,
   },
   amountValue: {
-    fontSize: 52,
+    fontSize: 46,
     fontWeight: 900,
     color: "#ff4d4d",
-    margin: "0 0 24px",
+    margin: "0 0 12px",
     lineHeight: 1,
   },
   qrBox: {
     borderRadius: 16,
     padding: 20,
-    marginBottom: 28,
+    marginBottom: 24,
     display: "inline-block",
   },
   timer: { fontSize: 13, color: "#555", marginBottom: 24 },
@@ -165,9 +167,8 @@ const styles = {
   note: { fontSize: 13, color: "#555", letterSpacing: 1, marginBottom: 24 },
   noteHighlight: { color: "#ff4d4d", fontWeight: 700 },
   backBtn: {
-    background: "transparent",
-    border: "1px solid #2a3350",
-    color: "#888",
+    background: "#ff4d4d",
+    color: "#ffffff",
     padding: "10px 24px",
     borderRadius: 8,
     fontSize: 13,

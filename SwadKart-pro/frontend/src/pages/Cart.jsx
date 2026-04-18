@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { ShoppingBag, ArrowRight, ArrowLeft, Trash2 } from "lucide-react";
 import { removeFromCart, updateQty } from "../redux/cartSlice";
 import Navbar from "../components/Navbar";
+import kaitod from "../img/kaitod.jpg";
 
 const Cart = () => {
   const navigate = useNavigate();
@@ -42,7 +43,7 @@ const Cart = () => {
           <ShoppingBag size={40} className="text-primary" />
           <div>
             <h1 className="text-4xl font-extrabold">
-              YOUR <span className="text-primary italic">FOOD BAG</span>
+              YOUR <span className="text-primary italic">KAITOD</span>
             </h1>
             <p className="text-gray-400 text-sm mt-1 tracking-widest uppercase">
               CHECK YOUR ITEMS BEFORE WE START COOKING
@@ -62,7 +63,7 @@ const Cart = () => {
               cartItems.map((item) => (
                 <div key={item.cartUniqueId} className="bg-gray-900 border border-gray-800 rounded-xl p-4 flex items-center gap-4 hover:border-primary/50 transition-all">
                   <div className="w-20 h-20 bg-gray-800 rounded-lg flex items-center justify-center text-xs text-gray-600">
-                    {item.name}
+                    <img src={kaitod} alt={item.name} className="w-full h-full object-cover rounded-lg" />
                   </div>
                   <div className="flex-1">
                     <p className="font-bold text-white">{item.name}</p>
@@ -80,7 +81,7 @@ const Cart = () => {
                     >
                       −
                     </button>
-                    <span className="px-4 py-2 font-semibold">{item.qty || 1}</span>
+                    <span className="px-2 py-2 font-semibold">{item.qty || 1}</span>
                     <button
                       className="px-3 py-2 text-white hover:bg-gray-700"
                       onClick={() => changeQty(item.cartUniqueId, 1)}

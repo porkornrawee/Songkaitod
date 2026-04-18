@@ -21,6 +21,8 @@ const STATIC_MENU = [
       { _id: "a2", name: "ปาปริก้า", price: 0 },
       { _id: "a3", name: "วิงซ์แซ่บ", price: 0 },
       { _id: "a4", name: "ฮอต แอนด์ สไปซี่", price: 0 },
+    ],
+    extras: [
       { _id: "a5", name: "ซอสมะเขือเทศ", price: 0 },
       { _id: "a6", name: "ซอสมายองเนส", price: 0 },
       { _id: "a7", name: "ดิปชีส", price: 10 },
