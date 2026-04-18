@@ -39,8 +39,6 @@ const STATIC_RESTAURANT = {
 const RestaurantMenu = () => {
   const { id } = useParams();
   const dispatch = useDispatch();
-  
-  const currentProduct = STATIC_MENU.find((item) => item._id === id);
 
   const [restaurant, setRestaurant] = useState(STATIC_RESTAURANT);
   const [menu, setMenu] = useState(STATIC_MENU);
