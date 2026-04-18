@@ -17,12 +17,12 @@ const STATIC_MENU = [
     price: 39,
     description: "เลือกผง 2 รสชาติ",
     addons: [
-      { _id: "a1", name: "ชีส", price: null },
-      { _id: "a2", name: "ปาปริก้า", price: null },
-      { _id: "a3", name: "วิงซ์แซ่บ", price: null },
-      { _id: "a4", name: "ฮอต แอนด์ สไปซี่", price: null },
-      { _id: "a5", name: "ซอสมะเขือเทศ", price: null },
-      { _id: "a6", name: "ซอสมายองเนส", price: null },
+      { _id: "a1", name: "ชีส", price: 0 },
+      { _id: "a2", name: "ปาปริก้า", price: 0 },
+      { _id: "a3", name: "วิงซ์แซ่บ", price: 0 },
+      { _id: "a4", name: "ฮอต แอนด์ สไปซี่", price: 0 },
+      { _id: "a5", name: "ซอสมะเขือเทศ", price: 0 },
+      { _id: "a6", name: "ซอสมายองเนส", price: 0 },
       { _id: "a7", name: "ดิปชีส", price: 10 },
     ],
   },
@@ -30,7 +30,7 @@ const STATIC_MENU = [
 ];
 
 const STATIC_RESTAURANT = {
-  name: "ไก่ทอด",
+  name: "ไก่ทอดคาราเกะ",
   isOpenNow: true,
   rating: 4.5,
   image: "",
@@ -118,13 +118,12 @@ const RestaurantMenu = () => {
   return (
     <div className="bg-black min-h-screen text-white pb-20 pt-16 font-sans">
       <MenuHero restaurant={restaurant} />
-      <div className="max-w-7xl mx-auto px-8 sm:px-6 lg:px-8 mt-8">
-        <div className="flex justify-between items-center mb-4">
+      <div className="max-w-7xl mx-auto px-8 sm:px-6 lg:px-8 mt-0 md:mt-8">
+        <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-4xl font-extrabold text-white mb-2">
+            <h1 className="text-4xl font-extrabold text-white">
               {restaurant?.name || "เมนูอาหาร"}
             </h1>
-            <p className="text-gray-400 text-sm">เลือกผง 2 รสชาติ</p>
           </div>
         </div>
       </div>

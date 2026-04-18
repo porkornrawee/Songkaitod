@@ -46,7 +46,7 @@ const SelectItem = ({ item, dispatch }) => {
         {item.addons?.length > 0 && (
           <div className="mb-2">
             <p className="text-lg font-extrabold text-gray-500 uppercase tracking-[0.1em] mb-3">
-              Add Extras:
+              เลือกผง 2 รสชาติ:
             </p>
             <ul className="space-y-3">
               {item.addons.map((a) => (
