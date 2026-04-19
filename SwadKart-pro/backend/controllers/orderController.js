@@ -4,6 +4,7 @@ import Restaurant from "../models/restaurantModel.js";
 import Coupon from "../models/couponModel.js";
 import sendEmail from "../utils/sendEmail.js";
 import { getOrderConfirmationTemplate } from "../utils/emailTemplates.js";
+import jwt from "jsonwebtoken"; // 👈 เพิ่มไลบรารีนี้เพื่อถอดรหัส Token เอง
 
 // ==========================================
 // 🛒 1. CREATE NEW ORDER
@@ -26,18 +27,34 @@ export const addOrderItems = async (req, res) => {
       return res.status(400).json({ message: "No order items detected." });
     }
 
+    // 🟢 NEW: เช็คด้วยตัวเองว่ามี Token ส่งมาไหม (Member) หรือไม่มี (Guest)
+    let currentUser = null;
+    if (req.headers.authorization && req.headers.authorization.startsWith("Bearer")) {
+      try {
+        const token = req.headers.authorization.split(" ")[1];
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        currentUser = await User.findById(decoded.id).select("-password");
+      } catch (error) {
+        console.log("Invalid or expired token, proceeding as Guest.");
+      }
+    }
+
+    // สร้างไอดีจำลองให้ Mongoose ยอมรับ สำหรับ Guest
+    const guestMongoId = "60d5ecb54b4c000000000000";
+
     // 🛡️ Generate a 4-digit OTP for secure delivery verification
     const deliveryOTP = Math.floor(1000 + Math.random() * 9000);
 
     const order = new Order({
-      user: req.user._id,
+      // ✅ ถ้าเป็น Member ใช้ไอดีจริง ถ้าเป็น Guest ใช้ไอดีจำลอง
+      user: currentUser ? currentUser._id : guestMongoId, 
       orderItems: orderItems.map((x) => ({
         name: x.name,
         qty: Number(x.qty),
         image: x.image,
         price: Number(x.price),
         product: x.product,
-        restaurant: x.restaurant, // ✅ CRITICAL: This links the order to the restaurant
+        restaurant: x.restaurant,
         selectedVariant: x.selectedVariant || null,
         selectedAddons: x.selectedAddons || [],
       })),
@@ -46,13 +63,11 @@ export const addOrderItems = async (req, res) => {
         address: shippingAddress.address,
         city: shippingAddress.city,
         postalCode: shippingAddress.postalCode,
-        state: shippingAddress.state || "Rajasthan",
-        country: shippingAddress.country || "India",
+        state: shippingAddress.state || "Bangkok",
+        country: shippingAddress.country || "Thailand",
         phone: shippingAddress.phone,
-        lat:
-          typeof shippingAddress.lat === "number" ? shippingAddress.lat : null,
-        lng:
-          typeof shippingAddress.lng === "number" ? shippingAddress.lng : null,
+        lat: typeof shippingAddress.lat === "number" ? shippingAddress.lat : null,
+        lng: typeof shippingAddress.lng === "number" ? shippingAddress.lng : null,
       },
       paymentMethod,
       itemsPrice: Number(itemsPrice),
@@ -68,25 +83,21 @@ export const addOrderItems = async (req, res) => {
 
     const createdOrder = await order.save();
 
-    // 🎫 Update Coupon Usage Log
-    if (couponCode) {
+    // 🎫 Update Coupon Usage Log (บันทึกเฉพาะคนที่เป็น Member)
+    if (couponCode && currentUser) {
       await Coupon.findOneAndUpdate(
         { code: couponCode.toUpperCase() },
-        { $addToSet: { usedBy: req.user._id } }
+        { $addToSet: { usedBy: currentUser._id } }
       ).catch((err) => console.log("Coupon Log Update Error:", err.message));
     }
 
     // 🔔 REAL-TIME SOCKET: Notify Restaurant Owner
     if (req.io) {
       try {
-        // 1. Get the Restaurant ID from the first item
         const restaurantId = createdOrder.orderItems[0].restaurant;
-
-        // 2. Find the Restaurant Document to get the OWNER'S User ID
         const restaurantDoc = await Restaurant.findById(restaurantId);
 
         if (restaurantDoc && restaurantDoc.owner) {
-          // 3. Emit to the Owner's User ID (because Dashboard joins room 'userInfo._id')
           const ownerId = restaurantDoc.owner.toString();
           req.io.to(ownerId).emit("newOrderReceived", createdOrder);
           console.log(`🔔 Socket: Notification sent to Owner ID: ${ownerId}`);
@@ -96,14 +107,12 @@ export const addOrderItems = async (req, res) => {
       }
     }
 
-    // 📧 Email notification for COD Orders
-    if (paymentMethod === "COD") {
+    // 📧 Email notification for COD Orders (ส่งเมลเฉพาะคนที่เป็น Member)
+    if (paymentMethod === "COD" && currentUser && currentUser.email) {
       try {
         await sendEmail({
-          email: req.user.email,
-          subject: `SwadKart: Order Confirmed! ✅ #${createdOrder._id
-            .toString()
-            .slice(-6)}`,
+          email: currentUser.email,
+          subject: `SwadKart: Order Confirmed! ✅ #${createdOrder._id.toString().slice(-6)}`,
           html: getOrderConfirmationTemplate(createdOrder, false),
         });
       } catch (e) {

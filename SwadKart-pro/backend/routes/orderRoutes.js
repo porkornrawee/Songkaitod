@@ -10,7 +10,7 @@ import {
   updateOrderStatus,
   updateOrderToPaid,
   cancelOrder,
-  getMyRestaurantOrders, // 👈 NEW: For Restaurant Dashboard (Fixes 403 Error)
+  getMyRestaurantOrders, 
 } from "../controllers/orderController.js";
 import { protect, authorizeRoles } from "../middleware/authMiddleware.js";
 
@@ -30,17 +30,13 @@ import {
   getHeatmapData,
 } from "../controllers/adminController.js";
 
-// 👇 Auth Middlewares
-
-
 // ============================================================
 // 👑 ROOT ROUTES (CREATE & ADMIN LIST)
 // ============================================================
 
-router
-  .route("/")
-  .post(protect, addOrderItems) // 🛒 User: Create New Order
-  .get(protect, authorizeRoles("admin"), getOrders); // 👑 Admin: Get All Orders
+// ✅ FIX: ปลดล็อก protect ตรง POST ออก เพื่อให้ Guest สั่งของได้
+router.post("/", addOrderItems); // 🛒 User & Guest: Create New Order
+router.get("/", protect, authorizeRoles("admin"), getOrders); // 👑 Admin: Get All Orders
 
 // ============================================================
 // 📊 ANALYTICS & STATS
@@ -48,7 +44,6 @@ router
 
 router.post("/sos", protect, authorizeRoles("delivery_partner"), triggerSOS);
 
-// ✅ FIX: Added "restaurant_owner" to allow access to sales stats
 router.get(
   "/sales-stats",
   protect,
@@ -66,11 +61,9 @@ router.get(
 router.get("/heatmap", protect, authorizeRoles("admin"), getHeatmapData);
 
 // ============================================================
-// 👨‍🍳 RESTAURANT OWNER SPECIFIC ROUTES (NEW)
+// 👨‍🍳 RESTAURANT OWNER SPECIFIC ROUTES 
 // ============================================================
 
-// ✅ FIX: Restaurant Dashboard Data Load
-// Ye route "/:id" se pehle hona chahiye warna error aayega (404 fix)
 router.get(
   "/restaurant-orders",
   protect,
@@ -89,7 +82,6 @@ router.get(
   getMyDeliveryOrders
 );
 
-// Driver Accept/Reject Logic
 router.put(
   "/:id/delivery-action",
   protect,
@@ -97,7 +89,6 @@ router.put(
   updateDeliveryAction
 );
 
-// Verify OTP & Mark Delivered
 router.put(
   "/:id/deliver",
   protect,
@@ -110,14 +101,12 @@ router.put(
 // ============================================================
 
 router.get("/myorders", protect, getMyOrders);
-
 router.put("/:id/cancel", protect, cancelOrder);
 
 // ============================================================
 // 🔧 RESTAURANT & ADMIN OPERATIONS
 // ============================================================
 
-// ✅ Restaurant: Update Status (Preparing/Ready)
 router.put(
   "/:id/status",
   protect,
@@ -125,7 +114,6 @@ router.put(
   updateOrderStatus
 );
 
-// ✅ Admin/Restaurant: Assign Delivery Partner
 router.put(
   "/:id/assign",
   protect,
@@ -137,14 +125,11 @@ router.put(
 // 💳 PAYMENT CONFIRMATION
 // ============================================================
 
-// ✅ Mark as Paid (Called after successful Razorpay transaction)
 router.put("/:id/pay", protect, updateOrderToPaid);
 
 // ============================================================
 // 🔍 FETCHING BY ID (Must be at the end)
 // ============================================================
-
-// ⚠️ IMPORTANT: Ye hamesha last me rakho, warna baaki routes break ho jayenge
 router.get("/:id", protect, getOrderById);
 
 export default router;
