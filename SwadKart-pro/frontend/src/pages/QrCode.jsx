@@ -314,8 +314,9 @@ const styles = {
     lineHeight: 1,
   },
   qrBox: {
+    width: 350,
     padding: 20,
-    marginBottom: 24,
+    marginBottom: 22,
     display: "inline-block",
   },
   timer: { fontSize: 13, color: "#555", marginBottom: 24 },
