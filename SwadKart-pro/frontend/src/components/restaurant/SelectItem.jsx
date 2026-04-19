@@ -16,6 +16,12 @@ const SelectItem = ({ item, dispatch }) => {
     return basePrice + addonsPrice;
   }, [selectedAddons, item.price]);
 
+  const selectedAddonCount = useMemo(() => {
+    return selectedAddons.filter((sa) =>
+      item.addons.some((a) => a._id === sa._id),
+    ).length;
+  }, [selectedAddons, item.addons]);
+
   const handleAddToCart = () => {
     dispatch(
       addToCart({
@@ -34,6 +40,11 @@ const SelectItem = ({ item, dispatch }) => {
       if (exists) {
         return prev.filter((sa) => sa._id !== addon._id);
       } else {
+        // Check if it's an addon and if already 2 addons selected
+        const isAddon = item.addons.some((a) => a._id === addon._id);
+        if (isAddon && selectedAddonCount >= 2) {
+          return prev;
+        }
         return [...prev, addon];
       }
     });
@@ -59,6 +70,10 @@ const SelectItem = ({ item, dispatch }) => {
                       type="checkbox"
                       checked={selectedAddons.some((sa) => sa._id === a._id)}
                       onChange={() => handleAddonToggle(a)}
+                      disabled={
+                        selectedAddonCount >= 2 &&
+                        !selectedAddons.some((sa) => sa._id === a._id)
+                      }
                       className="accent-primary w-6 h-6 rounded cursor-pointer"
                     />
                     <span className="font-bold">{a.name}</span>
