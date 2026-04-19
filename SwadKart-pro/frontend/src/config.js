@@ -6,5 +6,5 @@
 // Otherwise, it falls back to localhost for local development.
 export const BASE_URL = import.meta.env.VITE_API_URL ||
     (import.meta.env.MODE === "production"
-        ? "https://swadkart-5wtf.onrender.com"
-        : "http://localhost:8000");
+        ? "https://songkaitod.onrender.com"
+        : "http://localhost:4000");

@@ -115,17 +115,16 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 app.use("/uploads", express.static(path.join(__dirname, "/uploads")));
 
 app.get("/", (req, res) => {
-  res.send("🚀 SwadKart Beast Engine is running on Port 4000...");
+  res.send("🚀 SwadKart Beast Engine is running...");
 });
 
 // Error Handling
 app.use(notFound);
 app.use(errorHandler);
 
-// --- 🚀 Server Start (ใช้พอร์ต 4000 ตามที่คุณต้องการ) ---
-const PORT = 4000; 
-
+// --- 🚀 Server Start ---
+const PORT = process.env.PORT || 4000; 
 httpServer.listen(PORT, () => {
   console.log(`🔥 Mainframe firing on Sector ${PORT}`);
-  console.log(`✅ Ready to accept connections from http://localhost:5173`);
+  console.log(`✅ Ready to accept connections`);
 });
