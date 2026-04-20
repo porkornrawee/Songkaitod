@@ -39,6 +39,7 @@ const allowedOrigins = [
   "https://localhost:5173",
   "http://127.0.0.1:5173",
   "https://swadkart.vercel.app",
+  "https://songkaitod.vercel.app" // 👈 เพิ่มลิงก์ Vercel อันใหม่เรียบร้อยครับ!
 ];
 
 // --- 🔌 Socket.io Setup ---
