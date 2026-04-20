@@ -244,7 +244,7 @@ function App() {
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/cart" element={<Cart />} />
-               <Route path="/qrcode" element={<QrCodePage />} />
+                <Route path="/qrcode" element={<QrCodePage />} />
                 <Route path="/password/forgot" element={<ForgotPassword />} />
                 <Route
                   path="/password/reset/:token"
@@ -315,7 +315,9 @@ const PrivateRoute = () => {
 
 const AdminRoute = () => {
   const { userInfo } = useSelector((state) => state.user);
-  return userInfo && userInfo.role === "admin" ? (
+  const userRole = userInfo?.role || userInfo?.user?.role;
+
+  return userInfo && userRole === "admin" ? (
     <Outlet />
   ) : (
     <Navigate to="/login" replace />
@@ -324,17 +326,20 @@ const AdminRoute = () => {
 
 const RestaurantRoute = () => {
   const { userInfo } = useSelector((state) => state.user);
+  const userRole = userInfo?.role || userInfo?.user?.role;
+
   const isAllowed =
-    userInfo &&
-    (userInfo.role === "restaurant_owner" || userInfo.role === "admin");
+    userInfo && (userRole === "restaurant_owner" || userRole === "admin");
+
   return isAllowed ? <Outlet /> : <Navigate to="/login" replace />;
 };
 
 const DeliveryRoute = () => {
   const { userInfo } = useSelector((state) => state.user);
+  const userRole = userInfo?.role || userInfo?.user?.role;
+
   const isAllowed =
-    userInfo &&
-    (userInfo.role === "delivery_partner" || userInfo.role === "admin");
+    userInfo && (userRole === "delivery_partner" || userRole === "admin");
 
   return isAllowed ? <Outlet /> : <Navigate to="/login" replace />;
 };

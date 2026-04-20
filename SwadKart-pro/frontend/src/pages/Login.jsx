@@ -23,7 +23,13 @@ const Login = () => {
 
   useEffect(() => {
     if (userInfo) {
-      navigate("/");
+      const userRole = userInfo.role || userInfo.user?.role;
+
+      if (userRole === "admin") {
+        navigate("/admin/dashboard");
+      } else {
+        navigate("/");
+      }
     }
   }, [userInfo, navigate]);
 
@@ -50,7 +56,7 @@ const Login = () => {
         try {
           const bioRes = await axios.get(
             `${BASE_URL}/api/v1/users/profile/biometric-status`,
-            { headers: { Authorization: `Bearer ${data.token}` } }
+            { headers: { Authorization: `Bearer ${data.token}` } },
           );
 
           // If user has biometric enabled AND has registered credentials
@@ -63,7 +69,13 @@ const Login = () => {
         }
 
         toast.success("Login Successful! Welcome back. 👋");
-        navigate("/");
+        const userRole = data.role || data.user?.role;
+
+        if (userRole === "admin") {
+          navigate("/admin/dashboard");
+        } else {
+          navigate("/");
+        }
       } else {
         toast.error(data.message || "Invalid Email or Password");
       }
@@ -143,7 +155,11 @@ const Login = () => {
         </div>
 
         {/* The Magic Button */}
-        <Suspense fallback={<div className="h-[56px] w-full bg-gray-800 animate-pulse rounded-2xl border border-gray-700"></div>}>
+        <Suspense
+          fallback={
+            <div className="h-[56px] w-full bg-gray-800 animate-pulse rounded-2xl border border-gray-700"></div>
+          }
+        >
           <GoogleAuth />
         </Suspense>
 
