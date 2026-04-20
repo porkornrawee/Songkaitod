@@ -572,13 +572,30 @@ const OrderCard = ({ order, onUpdateStatus, isNew }) => {
       <p style={s.timeAgo}>{timeAgo(order.createdAt)}</p>
       <div style={s.itemsList}>
         {items.map((item, i) => (
-          <div key={i} style={s.itemRow}>
-            <span style={s.itemName}>
-              {item.name} × {item.qty}
-            </span>
-            <span style={s.itemPrice}>
-              ฿{((item.price || 0) * (item.qty || 1)).toFixed(0)}
-            </span>
+          <div key={i}>
+            <div style={s.itemRow}>
+              <span style={s.itemName}>
+                {item.name} × {item.qty}
+              </span>
+              <span style={s.itemPrice}>
+                ฿{((item.price || 0) * (item.qty || 1)).toFixed(0)}
+              </span>
+            </div>
+            <div>
+              {item.selectedVariant && (
+                <p style={s.itemVariant}>🌶 ผง: {item.selectedVariant}</p>
+              )}
+            </div>
+            <div>
+              {item.selectedAddons && item.selectedAddons.length > 0 && (
+                <p style={s.itemAddons}>
+                  +{" "}
+                  {item.selectedAddons
+                    .map((a) => (typeof a === "object" ? a.name : a))
+                    .join(", ")}
+                </p>
+              )}
+            </div>
           </div>
         ))}
       </div>
@@ -816,6 +833,16 @@ const s = {
   itemRow: { display: "flex", justifyContent: "space-between" },
   itemName: { fontSize: 13, color: "#aaa" },
   itemPrice: { fontSize: 13, color: "#ccc", fontWeight: 500 },
+  itemVariant: {
+    fontSize: 11,
+    color: "#f59e0b",
+    margin: "4px 0 0 8px",
+  },
+  itemAddons: {
+    fontSize: 11,
+    color: "#888",
+    margin: "2px 0 0 8px",
+  },
   totalRow: {
     display: "flex",
     justifyContent: "space-between",

@@ -57,7 +57,8 @@ const QrCodePage = () => {
           };
         }),
         shippingAddress: {
-          fullName: userInfo && userInfo.name ? userInfo.name : "Guest Customer",
+          fullName:
+            userInfo && userInfo.name ? userInfo.name : "Guest Customer",
           address: "ชำระที่ร้าน",
           city: "Bangkok",
           postalCode: "10000",
@@ -107,7 +108,7 @@ const QrCodePage = () => {
       QRCode.toCanvas(
         canvasRef.current,
         `PromptPay:0812345678:${total.toFixed(2)}THB:${orderId || ""}`,
-        { width: 200, margin: 2, color: { dark: "#111111", light: "#ffffff" } }
+        { width: 200, margin: 2, color: { dark: "#111111", light: "#ffffff" } },
       );
     }
   }, [orderLoading, orderError, total, orderId]);
@@ -122,8 +123,21 @@ const QrCodePage = () => {
 
   if (orderLoading) {
     return (
-      <div style={{ ...styles.wrapper, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 16 }}>
-        <Loader size={36} color="#ff4d4d" style={{ animation: "spin 1s linear infinite" }} />
+      <div
+        style={{
+          ...styles.wrapper,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flexDirection: "column",
+          gap: 16,
+        }}
+      >
+        <Loader
+          size={36}
+          color="#ff4d4d"
+          style={{ animation: "spin 1s linear infinite" }}
+        />
         <p style={{ color: "#888", fontSize: 15 }}>กำลังสร้างออเดอร์...</p>
         <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
       </div>
@@ -132,9 +146,23 @@ const QrCodePage = () => {
 
   if (orderError) {
     return (
-      <div style={{ ...styles.wrapper, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 16, padding: 40 }}>
-        <p style={{ color: "#ff4d4d", fontSize: 18, fontWeight: 700 }}>❌ เกิดข้อผิดพลาด</p>
-        <p style={{ color: "#888", fontSize: 14, textAlign: "center" }}>{orderError}</p>
+      <div
+        style={{
+          ...styles.wrapper,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flexDirection: "column",
+          gap: 16,
+          padding: 40,
+        }}
+      >
+        <p style={{ color: "#ff4d4d", fontSize: 18, fontWeight: 700 }}>
+          ❌ เกิดข้อผิดพลาด
+        </p>
+        <p style={{ color: "#888", fontSize: 14, textAlign: "center" }}>
+          {orderError}
+        </p>
         <button style={styles.backBtn} onClick={() => navigate("/cart")}>
           <ArrowLeft size={15} /> กลับไปตะกร้า
         </button>
@@ -199,9 +227,10 @@ const QrCodePage = () => {
               {/* ท็อปปิ้ง/ดิป (selectedAddons) */}
               {item.selectedAddons && item.selectedAddons.length > 0 && (
                 <p style={styles.summaryAddons}>
-                  + {item.selectedAddons
-                      .map((a) => (typeof a === "object" ? a.name : a))
-                      .join(", ")}
+                  +{" "}
+                  {item.selectedAddons
+                    .map((a) => (typeof a === "object" ? a.name : a))
+                    .join(", ")}
                 </p>
               )}
             </div>
@@ -215,7 +244,8 @@ const QrCodePage = () => {
         </div>
 
         <p style={styles.note}>
-          สแกนด้วย <span style={styles.noteHighlight}>PromptPay</span> หรือ Mobile Banking ใดก็ได้
+          สแกนด้วย <span style={styles.noteHighlight}>PromptPay</span> หรือ
+          Mobile Banking ใดก็ได้
         </p>
 
         <button style={styles.backBtn} onClick={() => navigate("/")}>
@@ -259,7 +289,12 @@ const styles = {
   },
   title: { fontSize: 26, fontWeight: 800, margin: "0 0 6px" },
   titleRed: { color: "#ff4d4d" },
-  amountNote: { fontSize: 14, color: "#888", letterSpacing: 1, marginBottom: 10 },
+  amountNote: {
+    fontSize: 14,
+    color: "#888",
+    letterSpacing: 1,
+    marginBottom: 10,
+  },
   orderIdBadge: {
     fontSize: 12,
     color: "#22c55e",
