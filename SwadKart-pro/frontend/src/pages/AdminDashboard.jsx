@@ -19,7 +19,7 @@ import {
 /* ─────────────────────────────────────────
    CONFIG
 ───────────────────────────────────────── */
-const POLL_INTERVAL = 15000; // Polling สำรอง ทุก 15 วิ (Socket คือ realtime จริง)
+const POLL_INTERVAL = 5000; // polling ทุก 5 วิ เป็น realtime fallback
 
 /* ─────────────────────────────────────────
    STATUS CONFIG
@@ -143,15 +143,21 @@ const AdminDashboard = () => {
     if (!userInfo?.token) return;
 
     const socket = io(BASE_URL, {
-      transports: ["websocket", "polling"],
-      auth: { token: userInfo.token },
+      // Render ไม่รองรับ WebSocket persistent — ใช้ polling อย่างเดียว
+      transports: ["polling"],
+      upgrade: false,
+      reconnection: true,
+      reconnectionAttempts: 10,
+      reconnectionDelay: 2000,
     });
     socketRef.current = socket;
 
     socket.on("connect", () => {
       setSocketConnected(true);
-      // Admin join room ของตัวเองเพื่อรับ events
+      // join ด้วย userInfo._id (admin ID)
       socket.emit("joinOrder", userInfo._id);
+      // join ห้อง "admin" สำหรับรับ broadcast ทุก order
+      socket.emit("joinOrder", "admin");
       console.log("🔌 Admin socket connected:", socket.id);
     });
 
@@ -177,6 +183,7 @@ const AdminDashboard = () => {
       });
       setTimeout(() => setNewOrderAlert(null), 5000);
       setLastUpdated(new Date());
+
     });
 
     // 🔄 สถานะ order อัปเดต
