@@ -10,7 +10,7 @@ import {
   updateOrderStatus,
   updateOrderToPaid,
   cancelOrder,
-  getMyRestaurantOrders, 
+  getMyRestaurantOrders,
 } from "../controllers/orderController.js";
 import { protect, authorizeRoles } from "../middleware/authMiddleware.js";
 
@@ -48,27 +48,27 @@ router.get(
   "/sales-stats",
   protect,
   authorizeRoles("admin", "restaurant_owner"),
-  getSalesStats
+  getSalesStats,
 );
 
 router.get(
   "/analytics",
   protect,
   authorizeRoles("admin", "restaurant_owner"),
-  getDashboardStats
+  getDashboardStats,
 );
 
 router.get("/heatmap", protect, authorizeRoles("admin"), getHeatmapData);
 
 // ============================================================
-// 👨‍🍳 RESTAURANT OWNER SPECIFIC ROUTES 
+// 👨‍🍳 RESTAURANT OWNER SPECIFIC ROUTES
 // ============================================================
 
 router.get(
   "/restaurant-orders",
   protect,
   authorizeRoles("restaurant_owner"),
-  getMyRestaurantOrders
+  getMyRestaurantOrders,
 );
 
 // ============================================================
@@ -79,21 +79,21 @@ router.get(
   "/my-deliveries",
   protect,
   authorizeRoles("delivery_partner"),
-  getMyDeliveryOrders
+  getMyDeliveryOrders,
 );
 
 router.put(
   "/:id/delivery-action",
   protect,
   authorizeRoles("delivery_partner"),
-  updateDeliveryAction
+  updateDeliveryAction,
 );
 
 router.put(
   "/:id/deliver",
   protect,
   authorizeRoles("admin", "delivery_partner"),
-  updateOrderToDelivered
+  updateOrderToDelivered,
 );
 
 // ============================================================
@@ -111,14 +111,14 @@ router.put(
   "/:id/status",
   protect,
   authorizeRoles("admin", "restaurant_owner"),
-  updateOrderStatus
+  updateOrderStatus,
 );
 
 router.put(
   "/:id/assign",
   protect,
   authorizeRoles("admin", "restaurant_owner"),
-  assignDeliveryPartner
+  assignDeliveryPartner,
 );
 
 // ============================================================

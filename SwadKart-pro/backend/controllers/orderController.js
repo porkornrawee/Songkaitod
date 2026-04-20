@@ -29,7 +29,10 @@ export const addOrderItems = async (req, res) => {
 
     // 🟢 NEW: เช็คด้วยตัวเองว่ามี Token ส่งมาไหม (Member) หรือไม่มี (Guest)
     let currentUser = null;
-    if (req.headers.authorization && req.headers.authorization.startsWith("Bearer")) {
+    if (
+      req.headers.authorization &&
+      req.headers.authorization.startsWith("Bearer")
+    ) {
       try {
         const token = req.headers.authorization.split(" ")[1];
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
@@ -47,7 +50,7 @@ export const addOrderItems = async (req, res) => {
 
     const order = new Order({
       // ✅ ถ้าเป็น Member ใช้ไอดีจริง ถ้าเป็น Guest ใช้ไอดีจำลอง
-      user: currentUser ? currentUser._id : guestMongoId, 
+      user: currentUser ? currentUser._id : guestMongoId,
       orderItems: orderItems.map((x) => ({
         name: x.name,
         qty: Number(x.qty),
@@ -66,8 +69,10 @@ export const addOrderItems = async (req, res) => {
         state: shippingAddress.state || "Bangkok",
         country: shippingAddress.country || "Thailand",
         phone: shippingAddress.phone,
-        lat: typeof shippingAddress.lat === "number" ? shippingAddress.lat : null,
-        lng: typeof shippingAddress.lng === "number" ? shippingAddress.lng : null,
+        lat:
+          typeof shippingAddress.lat === "number" ? shippingAddress.lat : null,
+        lng:
+          typeof shippingAddress.lng === "number" ? shippingAddress.lng : null,
       },
       paymentMethod,
       itemsPrice: Number(itemsPrice),
@@ -87,7 +92,7 @@ export const addOrderItems = async (req, res) => {
     if (couponCode && currentUser) {
       await Coupon.findOneAndUpdate(
         { code: couponCode.toUpperCase() },
-        { $addToSet: { usedBy: currentUser._id } }
+        { $addToSet: { usedBy: currentUser._id } },
       ).catch((err) => console.log("Coupon Log Update Error:", err.message));
     }
 
@@ -274,7 +279,6 @@ export const getMyOrders = async (req, res) => {
 // 👨‍🍳 7. RESTAURANT OWNER ORDERS (FIXED)
 // ==========================================
 export const getMyRestaurantOrders = async (req, res) => {
-
   console.log("🔥 Controller Hit: getMyRestaurantOrders");
   console.log("👤 User ID:", req.user._id);
   try {
@@ -296,7 +300,7 @@ export const getMyRestaurantOrders = async (req, res) => {
       .populate("user", "name email")
       .populate("deliveryPartner", "name phone")
       .sort({ createdAt: -1 });
-      console.log(`📦 Orders Found: ${orders.length}`);
+    console.log(`📦 Orders Found: ${orders.length}`);
 
     res.json(orders);
   } catch (error) {
