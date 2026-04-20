@@ -99,7 +99,7 @@ const AdminDashboard = () => {
 
   const [orders, setOrders] = useState([]);
   const [filter, setFilter] = useState("all");
-  const [newOrderAlert, setNewOrderAlert] = useState(null); // { id, customerName }
+  const [newOrderAlert, setNewOrderAlert] = useState(null);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [socketConnected, setSocketConnected] = useState(false);
@@ -127,7 +127,6 @@ const AdminDashboard = () => {
       const sorted = [...raw].sort(
         (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
       );
-      // อัปเดต Set ของ order IDs ที่รู้จักแล้ว
       sorted.forEach((o) => orderIdsRef.current.add(getId(o)));
       setOrders(sorted);
       setLastUpdated(new Date());
@@ -142,22 +141,17 @@ const AdminDashboard = () => {
   useEffect(() => {
     if (!userInfo?.token) return;
 
+    // แก้ไขให้รองรับ WebSocket เต็มรูปแบบ
     const socket = io(BASE_URL, {
-      // Render ไม่รองรับ WebSocket persistent — ใช้ polling อย่างเดียว
-      transports: ["polling"],
-      upgrade: false,
+      transports: ["websocket", "polling"],
       reconnection: true,
-      reconnectionAttempts: 10,
-      reconnectionDelay: 2000,
     });
     socketRef.current = socket;
 
     socket.on("connect", () => {
       setSocketConnected(true);
-      // join ด้วย userInfo._id (admin ID)
       socket.emit("joinOrder", userInfo._id);
-      // join ห้อง "admin" สำหรับรับ broadcast ทุก order
-      socket.emit("joinOrder", "admin");
+      socket.emit("joinOrder", "admin"); // เผื่อ Backend ส่งเข้าห้อง admin
       console.log("🔌 Admin socket connected:", socket.id);
     });
 
@@ -166,44 +160,28 @@ const AdminDashboard = () => {
       console.log("❌ Admin socket disconnected");
     });
 
-    // 🔔 ออเดอร์ใหม่เข้ามา (จาก orderController → addOrderItems)
     socket.on("newOrderReceived", (newOrder) => {
-      console.log("🆕 New order received via socket:", newOrder._id);
+      console.log("🆕 New order via socket:", newOrder._id);
       const newId = getId(newOrder);
 
-      // ป้องกัน duplicate
       if (orderIdsRef.current.has(newId)) return;
       orderIdsRef.current.add(newId);
 
       setOrders((prev) => [newOrder, ...prev]);
       setNewOrderAlert({
         id: newId,
-        name: newOrder.user?.name || "ลูกค้า",
+        name: newOrder.user?.name || newOrder.shippingAddress?.fullName || "ลูกค้า",
         total: newOrder.totalPrice,
       });
       setTimeout(() => setNewOrderAlert(null), 5000);
       setLastUpdated(new Date());
-
     });
 
-    // 🔄 สถานะ order อัปเดต
     socket.on("orderUpdated", (updatedOrder) => {
-      console.log("🔄 Order updated via socket:", updatedOrder._id);
       setOrders((prev) =>
-        prev.map((o) =>
-          getId(o) === getId(updatedOrder) ? updatedOrder : o
-        )
+        prev.map((o) => (getId(o) === getId(updatedOrder) ? updatedOrder : o))
       );
       setLastUpdated(new Date());
-    });
-
-    // 🌐 Global update (จาก deliveryController)
-    socket.on("globalOrderUpdate", (updatedOrder) => {
-      setOrders((prev) =>
-        prev.map((o) =>
-          getId(o) === getId(updatedOrder) ? updatedOrder : o
-        )
-      );
     });
 
     return () => {
@@ -214,18 +192,15 @@ const AdminDashboard = () => {
   // ── Polling สำรอง ────────────────────────
   useEffect(() => {
     if (!userInfo) return;
-    fetchOrders(); // โหลดครั้งแรก
+    fetchOrders(); 
     const interval = setInterval(fetchOrders, POLL_INTERVAL);
     return () => clearInterval(interval);
   }, [fetchOrders, userInfo]);
 
   // ── Update order status ──────────────────
   const updateStatus = async (orderId, newStatus) => {
-    // Optimistic update
     setOrders((prev) =>
-      prev.map((o) =>
-        getId(o) === orderId ? { ...o, orderStatus: newStatus } : o
-      )
+      prev.map((o) => (getId(o) === orderId ? { ...o, orderStatus: newStatus } : o))
     );
     try {
       await fetch(`${BASE_URL}/api/v1/orders/${orderId}/status`, {
@@ -236,13 +211,11 @@ const AdminDashboard = () => {
         },
         body: JSON.stringify({ status: newStatus }),
       });
-    } catch (err) {
-      console.error("Update status failed:", err);
-      fetchOrders(); // rollback
+    } catch  {
+      fetchOrders(); 
     }
   };
 
-  // ── Stats ────────────────────────────────
   const stats = {
     total: orders.length,
     placed: orders.filter((o) => getStatus(o) === "Placed").length,
@@ -257,30 +230,18 @@ const AdminDashboard = () => {
       .reduce((s, o) => s + getTotal(o), 0),
   };
 
-  const filtered =
-    filter === "all"
-      ? orders
-      : orders.filter((o) => getStatus(o) === filter);
+  const filtered = filter === "all" ? orders : orders.filter((o) => getStatus(o) === filter);
 
   return (
     <div style={s.wrapper}>
-      {/* ── Navbar ── */}
       <nav style={s.navbar}>
         <div style={s.navLeft}>
-          <span style={s.logo}>
-            Song<span style={s.red}>kaitod</span>
-            <span style={s.red}>.</span>
-          </span>
+          <span style={s.logo}>Song<span style={s.red}>kaitod</span><span style={s.red}>.</span></span>
           <span style={s.navTitle}>Admin Dashboard</span>
         </div>
         <div style={s.navRight}>
-          {/* Socket status indicator */}
           <div style={socketConnected ? s.socketBadgeOn : s.socketBadgeOff}>
-            {socketConnected ? (
-              <><Wifi size={12} /> Realtime</>
-            ) : (
-              <><WifiOff size={12} /> Polling</>
-            )}
+            {socketConnected ? <><Wifi size={12} /> Realtime</> : <><WifiOff size={12} /> Polling</>}
           </div>
           {lastUpdated && (
             <span style={s.updatedAt}>
@@ -298,11 +259,9 @@ const AdminDashboard = () => {
         </div>
       </nav>
 
-      {/* ── New order toast ── */}
       {newOrderAlert && (
         <div style={s.toast}>
-          🔔 ออเดอร์ใหม่จาก <strong>{newOrderAlert.name}</strong>!{" "}
-          ฿{newOrderAlert.total?.toFixed(0)}
+          🔔 ออเดอร์ใหม่จาก <strong>{newOrderAlert.name}</strong>! ฿{newOrderAlert.total?.toFixed(0)}
         </div>
       )}
 
@@ -315,22 +274,14 @@ const AdminDashboard = () => {
           </div>
         ) : (
           <>
-            {/* ── Stat Cards ── */}
             <div style={s.statsGrid}>
               <StatCard icon={<ShoppingBag size={22} color="#fff" />} label="ทั้งหมด" value={stats.total} color="#6366f1" />
               <StatCard icon={<Clock size={22} color="#fff" />} label="รอรับ" value={stats.placed} color="#f59e0b" />
               <StatCard icon={<ChefHat size={22} color="#fff" />} label="กำลังทำ" value={stats.preparing} color="#3b82f6" />
               <StatCard icon={<CheckCircle2 size={22} color="#fff" />} label="จัดส่งแล้ว" value={stats.delivered} color="#22c55e" />
-              <StatCard
-                icon={<TrendingUp size={22} color="#fff" />}
-                label="รายได้วันนี้"
-                value={`฿${stats.todayRevenue.toFixed(0)}`}
-                color="#ff4d4d"
-                wide
-              />
+              <StatCard icon={<TrendingUp size={22} color="#fff" />} label="รายได้วันนี้" value={`฿${stats.todayRevenue.toFixed(0)}`} color="#ff4d4d" wide />
             </div>
 
-            {/* ── Filter Tabs ── */}
             <div style={s.filterRow}>
               <span style={s.sectionTitle}>รายการออเดอร์</span>
               <div style={s.tabs}>
@@ -340,29 +291,19 @@ const AdminDashboard = () => {
                   { key: "Preparing", label: `กำลังทำ (${stats.preparing})` },
                   { key: "Delivered", label: `จัดส่งแล้ว (${stats.delivered})` },
                 ].map(({ key, label }) => (
-                  <button
-                    key={key}
-                    style={{ ...s.tab, ...(filter === key ? s.tabActive : {}) }}
-                    onClick={() => setFilter(key)}
-                  >
+                  <button key={key} style={{ ...s.tab, ...(filter === key ? s.tabActive : {}) }} onClick={() => setFilter(key)}>
                     {label}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* ── Order Cards ── */}
             <div style={s.orderGrid}>
               {filtered.length === 0 ? (
                 <div style={s.empty}>ไม่มีออเดอร์ในหมวดนี้</div>
               ) : (
                 filtered.map((order) => (
-                  <OrderCard
-                    key={getId(order)}
-                    order={order}
-                    onUpdateStatus={updateStatus}
-                    isNew={newOrderAlert?.id === getId(order)}
-                  />
+                  <OrderCard key={getId(order)} order={order} onUpdateStatus={updateStatus} isNew={newOrderAlert?.id === getId(order)} />
                 ))
               )}
             </div>
@@ -373,9 +314,6 @@ const AdminDashboard = () => {
   );
 };
 
-/* ─────────────────────────────────────────
-   STAT CARD
-───────────────────────────────────────── */
 const StatCard = ({ icon, label, value, color, wide }) => (
   <div style={{ ...s.statCard, gridColumn: wide ? "span 2" : "span 1" }}>
     <div style={{ ...s.statIcon, background: color }}>{icon}</div>
@@ -386,15 +324,12 @@ const StatCard = ({ icon, label, value, color, wide }) => (
   </div>
 );
 
-/* ─────────────────────────────────────────
-   ORDER CARD
-───────────────────────────────────────── */
 const OrderCard = ({ order, onUpdateStatus, isNew }) => {
   const statusKey = getStatus(order);
   const cfg = STATUS[statusKey] || DEFAULT_STATUS;
   const Icon = cfg.icon;
   const id = getId(order);
-  const customerName = order.user?.name || order.customerName || "ลูกค้า";
+  const customerName = order.user?.name || order.shippingAddress?.fullName || order.customerName || "ลูกค้า";
   const items = order.orderItems || order.items || [];
   const total = getTotal(order);
 
@@ -405,22 +340,18 @@ const OrderCard = ({ order, onUpdateStatus, isNew }) => {
       ...(isNew ? { boxShadow: `0 0 20px ${cfg.color}44`, animation: "pulse 1s ease-in-out 3" } : {}),
     }}>
       <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.7} }`}</style>
-
       <div style={s.orderHeader}>
         <div>
           <span style={s.orderId}>#{id?.slice(-6)}</span>
           {order.tableNo && <span style={s.tableNo}>โต๊ะ {order.tableNo}</span>}
         </div>
         <div style={{ ...s.statusBadge, background: cfg.bg, color: cfg.color }}>
-          <Icon size={13} />
-          {cfg.labelTH}
+          <Icon size={13} /> {cfg.labelTH}
         </div>
       </div>
-
       <p style={s.customerName}>{customerName}</p>
       <p style={s.customerEmail}>{order.user?.email || ""}</p>
       <p style={s.timeAgo}>{timeAgo(order.createdAt)}</p>
-
       <div style={s.itemsList}>
         {items.map((item, i) => (
           <div key={i} style={s.itemRow}>
@@ -429,17 +360,12 @@ const OrderCard = ({ order, onUpdateStatus, isNew }) => {
           </div>
         ))}
       </div>
-
       <div style={s.totalRow}>
         <span style={s.totalLabel}>รวม</span>
         <span style={s.totalValue}>฿{total.toFixed(2)}</span>
       </div>
-
       {cfg.next && (
-        <button
-          style={{ ...s.actionBtn, background: (STATUS[cfg.next] || DEFAULT_STATUS).color }}
-          onClick={() => onUpdateStatus(id, cfg.next)}
-        >
+        <button style={{ ...s.actionBtn, background: (STATUS[cfg.next] || DEFAULT_STATUS).color }} onClick={() => onUpdateStatus(id, cfg.next)}>
           {cfg.nextLabel} →
         </button>
       )}
@@ -447,9 +373,6 @@ const OrderCard = ({ order, onUpdateStatus, isNew }) => {
   );
 };
 
-/* ─────────────────────────────────────────
-   STYLES
-───────────────────────────────────────── */
 const s = {
   wrapper: { background: "#0a0e1a", minHeight: "100vh", color: "#fff", fontFamily: "'Segoe UI', sans-serif" },
   navbar: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 32px", borderBottom: "1px solid #1e2640", background: "#0d1221" },
