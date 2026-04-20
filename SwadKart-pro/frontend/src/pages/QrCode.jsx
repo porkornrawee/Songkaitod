@@ -22,7 +22,6 @@ const QrCodePage = () => {
   const [orderError, setOrderError] = useState(null);
 
   const createOrder = useCallback(async () => {
-    // ❌ เอาเงื่อนไขบังคับ Login ออกไปแล้ว (ให้ Guest ผ่านได้)
     if (!items || items.length === 0) {
       navigate("/cart");
       return;
@@ -58,9 +57,7 @@ const QrCodePage = () => {
           };
         }),
         shippingAddress: {
-          // ✅ ตรวจสอบว่าเป็น Guest หรือเปล่า ถ้าใช่ให้ใช้ชื่อ Guest แทน
-          fullName:
-            userInfo && userInfo.name ? userInfo.name : "Guest Customer",
+          fullName: userInfo && userInfo.name ? userInfo.name : "Guest Customer",
           address: "ชำระที่ร้าน",
           city: "Bangkok",
           postalCode: "10000",
@@ -77,10 +74,7 @@ const QrCodePage = () => {
         couponDiscount: 0,
       };
 
-      // ✅ ตั้งค่า Header (แนบ Token แค่ตอนที่มีการ Login เท่านั้น)
-      const fetchHeaders = {
-        "Content-Type": "application/json",
-      };
+      const fetchHeaders = { "Content-Type": "application/json" };
       if (userInfo && userInfo.token) {
         fetchHeaders.Authorization = `Bearer ${userInfo.token}`;
       }
@@ -92,7 +86,6 @@ const QrCodePage = () => {
       });
 
       const data = await res.json();
-
       if (!res.ok) throw new Error(data.message || "สร้าง order ไม่สำเร็จ");
 
       setOrderId(data._id);
@@ -114,11 +107,7 @@ const QrCodePage = () => {
       QRCode.toCanvas(
         canvasRef.current,
         `PromptPay:0812345678:${total.toFixed(2)}THB:${orderId || ""}`,
-        {
-          width: 200,
-          margin: 2,
-          color: { dark: "#111111", light: "#ffffff" },
-        },
+        { width: 200, margin: 2, color: { dark: "#111111", light: "#ffffff" } }
       );
     }
   }, [orderLoading, orderError, total, orderId]);
@@ -133,21 +122,8 @@ const QrCodePage = () => {
 
   if (orderLoading) {
     return (
-      <div
-        style={{
-          ...styles.wrapper,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          flexDirection: "column",
-          gap: 16,
-        }}
-      >
-        <Loader
-          size={36}
-          color="#ff4d4d"
-          style={{ animation: "spin 1s linear infinite" }}
-        />
+      <div style={{ ...styles.wrapper, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 16 }}>
+        <Loader size={36} color="#ff4d4d" style={{ animation: "spin 1s linear infinite" }} />
         <p style={{ color: "#888", fontSize: 15 }}>กำลังสร้างออเดอร์...</p>
         <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
       </div>
@@ -156,23 +132,9 @@ const QrCodePage = () => {
 
   if (orderError) {
     return (
-      <div
-        style={{
-          ...styles.wrapper,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          flexDirection: "column",
-          gap: 16,
-          padding: 40,
-        }}
-      >
-        <p style={{ color: "#ff4d4d", fontSize: 18, fontWeight: 700 }}>
-          ❌ เกิดข้อผิดพลาด
-        </p>
-        <p style={{ color: "#888", fontSize: 14, textAlign: "center" }}>
-          {orderError}
-        </p>
+      <div style={{ ...styles.wrapper, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 16, padding: 40 }}>
+        <p style={{ color: "#ff4d4d", fontSize: 18, fontWeight: 700 }}>❌ เกิดข้อผิดพลาด</p>
+        <p style={{ color: "#888", fontSize: 14, textAlign: "center" }}>{orderError}</p>
         <button style={styles.backBtn} onClick={() => navigate("/cart")}>
           <ArrowLeft size={15} /> กลับไปตะกร้า
         </button>
@@ -214,16 +176,37 @@ const QrCodePage = () => {
 
         <div style={styles.summaryCard}>
           <p style={styles.summaryTitle}>รายการสินค้า</p>
+
           {items.map((item, i) => (
-            <div key={i} style={styles.summaryRow}>
-              <span style={styles.summaryItem}>
-                {item.name} × {item.qty || 1}
-              </span>
-              <span style={styles.summaryItemPrice}>
-                ฿{((item.price || 0) * (item.qty || 1)).toFixed(2)}
-              </span>
+            <div key={i} style={styles.summaryItemBlock}>
+              {/* ชื่อสินค้า + ราคา */}
+              <div style={styles.summaryRow}>
+                <span style={styles.summaryItem}>
+                  {item.name} × {item.qty || 1}
+                </span>
+                <span style={styles.summaryItemPrice}>
+                  ฿{((item.price || 0) * (item.qty || 1)).toFixed(2)}
+                </span>
+              </div>
+
+              {/* ผงที่เลือก (selectedVariant) */}
+              {item.selectedVariant && (
+                <p style={styles.summaryVariant}>
+                  🌶 ผง: {item.selectedVariant}
+                </p>
+              )}
+
+              {/* ท็อปปิ้ง/ดิป (selectedAddons) */}
+              {item.selectedAddons && item.selectedAddons.length > 0 && (
+                <p style={styles.summaryAddons}>
+                  + {item.selectedAddons
+                      .map((a) => (typeof a === "object" ? a.name : a))
+                      .join(", ")}
+                </p>
+              )}
             </div>
           ))}
+
           <div style={styles.divider} />
           <div style={styles.summaryRow}>
             <span style={styles.summaryTotal}>รวมทั้งหมด</span>
@@ -232,8 +215,7 @@ const QrCodePage = () => {
         </div>
 
         <p style={styles.note}>
-          สแกนด้วย <span style={styles.noteHighlight}>PromptPay</span> หรือ
-          Mobile Banking ใดก็ได้
+          สแกนด้วย <span style={styles.noteHighlight}>PromptPay</span> หรือ Mobile Banking ใดก็ได้
         </p>
 
         <button style={styles.backBtn} onClick={() => navigate("/")}>
@@ -277,12 +259,7 @@ const styles = {
   },
   title: { fontSize: 26, fontWeight: 800, margin: "0 0 6px" },
   titleRed: { color: "#ff4d4d" },
-  amountNote: {
-    fontSize: 14,
-    color: "#888",
-    letterSpacing: 1,
-    marginBottom: 10,
-  },
+  amountNote: { fontSize: 14, color: "#888", letterSpacing: 1, marginBottom: 10 },
   orderIdBadge: {
     fontSize: 12,
     color: "#22c55e",
@@ -331,6 +308,11 @@ const styles = {
     textTransform: "uppercase",
     margin: "0 0 10px",
   },
+  summaryItemBlock: {
+    paddingBottom: 10,
+    marginBottom: 6,
+    borderBottom: "1px solid #1a2035",
+  },
   summaryRow: {
     display: "flex",
     justifyContent: "space-between",
@@ -338,6 +320,16 @@ const styles = {
   },
   summaryItem: { fontSize: 14, color: "#ccc" },
   summaryItemPrice: { fontSize: 14, color: "#fff", fontWeight: 600 },
+  summaryVariant: {
+    fontSize: 12,
+    color: "#ff9900",
+    margin: "2px 0 0 8px",
+  },
+  summaryAddons: {
+    fontSize: 12,
+    color: "#888",
+    margin: "2px 0 0 8px",
+  },
   divider: { borderTop: "1px solid #1e2640", margin: "8px 0" },
   summaryTotal: { fontSize: 14, color: "#fff", fontWeight: 700 },
   summaryTotalPrice: { fontSize: 14, color: "#ff4d4d", fontWeight: 800 },
