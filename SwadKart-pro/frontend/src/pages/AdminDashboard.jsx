@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { BASE_URL } from "../config";
+import { io } from "socket.io-client";
 import {
   ShoppingBag,
   Clock,
@@ -11,37 +12,44 @@ import {
   LogOut,
   Bell,
   RefreshCw,
+  Wifi,
+  WifiOff,
 } from "lucide-react";
 
 /* ─────────────────────────────────────────
    CONFIG
 ───────────────────────────────────────── */
-const POLL_INTERVAL = 5000; // ดึงข้อมูลทุก 5 วินาที
+const POLL_INTERVAL = 15000; // Polling สำรอง ทุก 15 วิ (Socket คือ realtime จริง)
 
 /* ─────────────────────────────────────────
    STATUS CONFIG
 ───────────────────────────────────────── */
 const STATUS = {
-  pending: {
-    label: "Pending",
+  Placed: {
     labelTH: "รอรับออเดอร์",
     color: "#f59e0b",
     bg: "#2d2009",
     icon: Clock,
-    next: "cooking",
-    nextLabel: "รับออเดอร์",
+    next: "Preparing",
+    nextLabel: "รับออเดอร์ / เริ่มทำ",
   },
-  cooking: {
-    label: "Cooking",
+  Preparing: {
     labelTH: "กำลังทำอาหาร",
     color: "#3b82f6",
     bg: "#0d1f3c",
     icon: ChefHat,
-    next: "delivered",
+    next: "Ready",
+    nextLabel: "พร้อมส่ง",
+  },
+  Ready: {
+    labelTH: "พร้อมส่ง",
+    color: "#a855f7",
+    bg: "#1a0d2e",
+    icon: ShoppingBag,
+    next: "Delivered",
     nextLabel: "ส่งแล้ว",
   },
-  delivered: {
-    label: "Delivered",
+  Delivered: {
     labelTH: "จัดส่งแล้ว",
     color: "#22c55e",
     bg: "#0a2318",
@@ -49,58 +57,24 @@ const STATUS = {
     next: null,
     nextLabel: null,
   },
+  Cancelled: {
+    labelTH: "ยกเลิกแล้ว",
+    color: "#ef4444",
+    bg: "#2d0a0a",
+    icon: Clock,
+    next: null,
+    nextLabel: null,
+  },
 };
 
-/* ─────────────────────────────────────────
-   MOCK DATA (fallback ถ้า API ยังไม่พร้อม)
-───────────────────────────────────────── */
-const MOCK_ORDERS = [
-  {
-    _id: "ORD001",
-    user: { name: "สมชาย ใจดี" },
-    orderItems: [
-      { name: "ไก่ทอด", qty: 2, price: 25 },
-      { name: "ข้าวสวย", qty: 1, price: 15 },
-    ],
-    totalPrice: 65,
-    orderStatus: "pending",
-    createdAt: new Date(Date.now() - 120000).toISOString(),
-    tableNo: "A1",
-  },
-  {
-    _id: "ORD002",
-    user: { name: "สมหญิง รักดี" },
-    orderItems: [
-      { name: "ดิปชีส", qty: 1, price: 30 },
-      { name: "น้ำอัดลม", qty: 2, price: 20 },
-    ],
-    totalPrice: 70,
-    orderStatus: "cooking",
-    createdAt: new Date(Date.now() - 600000).toISOString(),
-    tableNo: "B3",
-  },
-  {
-    _id: "ORD003",
-    user: { name: "วิชัย มีสุข" },
-    orderItems: [{ name: "ส้มตำ", qty: 1, price: 45 }],
-    totalPrice: 45,
-    orderStatus: "delivered",
-    createdAt: new Date(Date.now() - 3600000).toISOString(),
-    tableNo: "C2",
-  },
-  {
-    _id: "ORD004",
-    user: { name: "นภา สวยงาม" },
-    orderItems: [
-      { name: "ต้มยำ", qty: 1, price: 60 },
-      { name: "ไก่ทอด", qty: 1, price: 25 },
-    ],
-    totalPrice: 85,
-    orderStatus: "pending",
-    createdAt: new Date(Date.now() - 60000).toISOString(),
-    tableNo: "A2",
-  },
-];
+const DEFAULT_STATUS = {
+  labelTH: "ไม่ทราบสถานะ",
+  color: "#666",
+  bg: "#1a1a1a",
+  icon: Clock,
+  next: null,
+  nextLabel: null,
+};
 
 /* ─────────────────────────────────────────
    HELPERS
@@ -112,6 +86,10 @@ const timeAgo = (dateStr) => {
   return `${Math.floor(diff / 3600)} ชั่วโมงที่แล้ว`;
 };
 
+const getId = (o) => o._id || o.id;
+const getStatus = (o) => o.orderStatus || o.status || "Placed";
+const getTotal = (o) => o.totalPrice || o.total || 0;
+
 /* ─────────────────────────────────────────
    MAIN COMPONENT
 ───────────────────────────────────────── */
@@ -121,13 +99,13 @@ const AdminDashboard = () => {
 
   const [orders, setOrders] = useState([]);
   const [filter, setFilter] = useState("all");
-  const [newOrderAlert, setNewOrderAlert] = useState(false);
-  const [useMock, setUseMock] = useState(false);
+  const [newOrderAlert, setNewOrderAlert] = useState(null); // { id, customerName }
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState(null);
+  const [socketConnected, setSocketConnected] = useState(false);
 
-  const lastOrderCountRef = useRef(0);
-  const ordersLengthRef = useRef(0);
+  const socketRef = useRef(null);
+  const orderIdsRef = useRef(new Set());
 
   // ── Auth guard ──────────────────────────
   useEffect(() => {
@@ -136,68 +114,112 @@ const AdminDashboard = () => {
     }
   }, [userInfo, navigate]);
 
-  // ── Fetch orders from Express API ───────
+  // ── Fetch all orders from API ────────────
   const fetchOrders = useCallback(async () => {
+    if (!userInfo?.token) return;
     try {
-      const res = await fetch(`${BASE_URL}/api/v1/orders/allorders`, {
-        headers: {
-          Authorization: `Bearer ${userInfo?.token}`,
-        },
+      const res = await fetch(`${BASE_URL}/api/v1/orders`, {
+        headers: { Authorization: `Bearer ${userInfo.token}` },
       });
-
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
       const data = await res.json();
-
-      // รองรับทั้ง { orders: [...] } และ [...]
       const raw = Array.isArray(data) ? data : data.orders ?? [];
       const sorted = [...raw].sort(
         (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
       );
-
-      // แจ้งเตือนออเดอร์ใหม่
-      if (lastOrderCountRef.current > 0 && sorted.length > lastOrderCountRef.current) {
-        setNewOrderAlert(true);
-        setTimeout(() => setNewOrderAlert(false), 4000);
-      }
-      lastOrderCountRef.current = sorted.length;
-      ordersLengthRef.current = sorted.length;
-
+      // อัปเดต Set ของ order IDs ที่รู้จักแล้ว
+      sorted.forEach((o) => orderIdsRef.current.add(getId(o)));
       setOrders(sorted);
-      setUseMock(false);
       setLastUpdated(new Date());
     } catch (err) {
-      console.warn("API fetch failed, using mock data:", err.message);
-      if (ordersLengthRef.current === 0) {
-        setOrders(MOCK_ORDERS);
-        setUseMock(true);
-      }
+      console.warn("Fetch orders failed:", err.message);
     } finally {
       setLoading(false);
     }
   }, [userInfo]);
 
-  // ── Start polling ────────────────────────
+  // ── Socket.io — เชื่อมต่อ realtime ─────
+  useEffect(() => {
+    if (!userInfo?.token) return;
+
+    const socket = io(BASE_URL, {
+      transports: ["websocket", "polling"],
+      auth: { token: userInfo.token },
+    });
+    socketRef.current = socket;
+
+    socket.on("connect", () => {
+      setSocketConnected(true);
+      // Admin join room ของตัวเองเพื่อรับ events
+      socket.emit("joinOrder", userInfo._id);
+      console.log("🔌 Admin socket connected:", socket.id);
+    });
+
+    socket.on("disconnect", () => {
+      setSocketConnected(false);
+      console.log("❌ Admin socket disconnected");
+    });
+
+    // 🔔 ออเดอร์ใหม่เข้ามา (จาก orderController → addOrderItems)
+    socket.on("newOrderReceived", (newOrder) => {
+      console.log("🆕 New order received via socket:", newOrder._id);
+      const newId = getId(newOrder);
+
+      // ป้องกัน duplicate
+      if (orderIdsRef.current.has(newId)) return;
+      orderIdsRef.current.add(newId);
+
+      setOrders((prev) => [newOrder, ...prev]);
+      setNewOrderAlert({
+        id: newId,
+        name: newOrder.user?.name || "ลูกค้า",
+        total: newOrder.totalPrice,
+      });
+      setTimeout(() => setNewOrderAlert(null), 5000);
+      setLastUpdated(new Date());
+    });
+
+    // 🔄 สถานะ order อัปเดต
+    socket.on("orderUpdated", (updatedOrder) => {
+      console.log("🔄 Order updated via socket:", updatedOrder._id);
+      setOrders((prev) =>
+        prev.map((o) =>
+          getId(o) === getId(updatedOrder) ? updatedOrder : o
+        )
+      );
+      setLastUpdated(new Date());
+    });
+
+    // 🌐 Global update (จาก deliveryController)
+    socket.on("globalOrderUpdate", (updatedOrder) => {
+      setOrders((prev) =>
+        prev.map((o) =>
+          getId(o) === getId(updatedOrder) ? updatedOrder : o
+        )
+      );
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [userInfo]);
+
+  // ── Polling สำรอง ────────────────────────
   useEffect(() => {
     if (!userInfo) return;
-
-    fetchOrders(); // ดึงทันทีตอนโหลด
-
+    fetchOrders(); // โหลดครั้งแรก
     const interval = setInterval(fetchOrders, POLL_INTERVAL);
     return () => clearInterval(interval);
   }, [fetchOrders, userInfo]);
 
   // ── Update order status ──────────────────
   const updateStatus = async (orderId, newStatus) => {
-    // Optimistic update — อัปเดต UI ทันทีก่อน API ตอบ
+    // Optimistic update
     setOrders((prev) =>
       prev.map((o) =>
-        (o._id || o.id) === orderId ? { ...o, orderStatus: newStatus } : o
+        getId(o) === orderId ? { ...o, orderStatus: newStatus } : o
       )
     );
-
-    if (useMock) return;
-
     try {
       await fetch(`${BASE_URL}/api/v1/orders/${orderId}/status`, {
         method: "PUT",
@@ -205,7 +227,7 @@ const AdminDashboard = () => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${userInfo?.token}`,
         },
-        body: JSON.stringify({ orderStatus: newStatus }),
+        body: JSON.stringify({ status: newStatus }),
       });
     } catch (err) {
       console.error("Update status failed:", err);
@@ -214,26 +236,24 @@ const AdminDashboard = () => {
   };
 
   // ── Stats ────────────────────────────────
-  const getStatus = (o) => o.orderStatus || o.status || "pending";
-  const getTotal = (o) => o.totalPrice || o.total || 0;
-  const getId = (o) => o._id || o.id;
-
   const stats = {
     total: orders.length,
-    pending: orders.filter((o) => getStatus(o) === "pending").length,
-    cooking: orders.filter((o) => getStatus(o) === "cooking").length,
-    delivered: orders.filter((o) => getStatus(o) === "delivered").length,
+    placed: orders.filter((o) => getStatus(o) === "Placed").length,
+    preparing: orders.filter((o) => getStatus(o) === "Preparing").length,
+    delivered: orders.filter((o) => getStatus(o) === "Delivered").length,
     todayRevenue: orders
       .filter(
         (o) =>
-          getStatus(o) === "delivered" &&
+          getStatus(o) === "Delivered" &&
           new Date(o.createdAt).toDateString() === new Date().toDateString()
       )
       .reduce((s, o) => s + getTotal(o), 0),
   };
 
   const filtered =
-    filter === "all" ? orders : orders.filter((o) => getStatus(o) === filter);
+    filter === "all"
+      ? orders
+      : orders.filter((o) => getStatus(o) === filter);
 
   return (
     <div style={s.wrapper}>
@@ -247,7 +267,14 @@ const AdminDashboard = () => {
           <span style={s.navTitle}>Admin Dashboard</span>
         </div>
         <div style={s.navRight}>
-          {useMock && <span style={s.mockBadge}>⚠ Mock Data</span>}
+          {/* Socket status indicator */}
+          <div style={socketConnected ? s.socketBadgeOn : s.socketBadgeOff}>
+            {socketConnected ? (
+              <><Wifi size={12} /> Realtime</>
+            ) : (
+              <><WifiOff size={12} /> Polling</>
+            )}
+          </div>
           {lastUpdated && (
             <span style={s.updatedAt}>
               <RefreshCw size={11} />
@@ -259,15 +286,17 @@ const AdminDashboard = () => {
             {newOrderAlert && <span style={s.alertDot} />}
           </div>
           <button style={s.logoutBtn} onClick={() => navigate("/login")}>
-            <LogOut size={16} />
-            ออกจากระบบ
+            <LogOut size={16} /> ออกจากระบบ
           </button>
         </div>
       </nav>
 
       {/* ── New order toast ── */}
       {newOrderAlert && (
-        <div style={s.toast}>🔔 มีออเดอร์ใหม่เข้ามา!</div>
+        <div style={s.toast}>
+          🔔 ออเดอร์ใหม่จาก <strong>{newOrderAlert.name}</strong>!{" "}
+          ฿{newOrderAlert.total?.toFixed(0)}
+        </div>
       )}
 
       <div style={s.content}>
@@ -275,15 +304,15 @@ const AdminDashboard = () => {
           <div style={s.loadingWrap}>
             <RefreshCw size={28} color="#ff4d4d" style={{ animation: "spin 1s linear infinite" }} />
             <p style={{ color: "#555", marginTop: 12 }}>กำลังโหลดออเดอร์...</p>
-            <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+            <style>{`@keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }`}</style>
           </div>
         ) : (
           <>
             {/* ── Stat Cards ── */}
             <div style={s.statsGrid}>
               <StatCard icon={<ShoppingBag size={22} color="#fff" />} label="ทั้งหมด" value={stats.total} color="#6366f1" />
-              <StatCard icon={<Clock size={22} color="#fff" />} label="รอรับ" value={stats.pending} color="#f59e0b" />
-              <StatCard icon={<ChefHat size={22} color="#fff" />} label="กำลังทำ" value={stats.cooking} color="#3b82f6" />
+              <StatCard icon={<Clock size={22} color="#fff" />} label="รอรับ" value={stats.placed} color="#f59e0b" />
+              <StatCard icon={<ChefHat size={22} color="#fff" />} label="กำลังทำ" value={stats.preparing} color="#3b82f6" />
               <StatCard icon={<CheckCircle2 size={22} color="#fff" />} label="จัดส่งแล้ว" value={stats.delivered} color="#22c55e" />
               <StatCard
                 icon={<TrendingUp size={22} color="#fff" />}
@@ -298,16 +327,18 @@ const AdminDashboard = () => {
             <div style={s.filterRow}>
               <span style={s.sectionTitle}>รายการออเดอร์</span>
               <div style={s.tabs}>
-                {["all", "pending", "cooking", "delivered"].map((tab) => (
+                {[
+                  { key: "all", label: `ทั้งหมด (${stats.total})` },
+                  { key: "Placed", label: `รอรับ (${stats.placed})` },
+                  { key: "Preparing", label: `กำลังทำ (${stats.preparing})` },
+                  { key: "Delivered", label: `จัดส่งแล้ว (${stats.delivered})` },
+                ].map(({ key, label }) => (
                   <button
-                    key={tab}
-                    style={{ ...s.tab, ...(filter === tab ? s.tabActive : {}) }}
-                    onClick={() => setFilter(tab)}
+                    key={key}
+                    style={{ ...s.tab, ...(filter === key ? s.tabActive : {}) }}
+                    onClick={() => setFilter(key)}
                   >
-                    {tab === "all" ? `ทั้งหมด (${stats.total})`
-                      : tab === "pending" ? `รอรับ (${stats.pending})`
-                      : tab === "cooking" ? `กำลังทำ (${stats.cooking})`
-                      : `จัดส่งแล้ว (${stats.delivered})`}
+                    {label}
                   </button>
                 ))}
               </div>
@@ -323,6 +354,7 @@ const AdminDashboard = () => {
                     key={getId(order)}
                     order={order}
                     onUpdateStatus={updateStatus}
+                    isNew={newOrderAlert?.id === getId(order)}
                   />
                 ))
               )}
@@ -350,17 +382,23 @@ const StatCard = ({ icon, label, value, color, wide }) => (
 /* ─────────────────────────────────────────
    ORDER CARD
 ───────────────────────────────────────── */
-const OrderCard = ({ order, onUpdateStatus }) => {
-  const statusKey = order.orderStatus || order.status || "pending";
-  const cfg = STATUS[statusKey] || STATUS.pending;
+const OrderCard = ({ order, onUpdateStatus, isNew }) => {
+  const statusKey = getStatus(order);
+  const cfg = STATUS[statusKey] || DEFAULT_STATUS;
   const Icon = cfg.icon;
-  const id = order._id || order.id;
+  const id = getId(order);
   const customerName = order.user?.name || order.customerName || "ลูกค้า";
   const items = order.orderItems || order.items || [];
-  const total = order.totalPrice || order.total || 0;
+  const total = getTotal(order);
 
   return (
-    <div style={{ ...s.orderCard, borderTop: `3px solid ${cfg.color}` }}>
+    <div style={{
+      ...s.orderCard,
+      borderTop: `3px solid ${cfg.color}`,
+      ...(isNew ? { boxShadow: `0 0 20px ${cfg.color}44`, animation: "pulse 1s ease-in-out 3" } : {}),
+    }}>
+      <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.7} }`}</style>
+
       <div style={s.orderHeader}>
         <div>
           <span style={s.orderId}>#{id?.slice(-6)}</span>
@@ -373,13 +411,14 @@ const OrderCard = ({ order, onUpdateStatus }) => {
       </div>
 
       <p style={s.customerName}>{customerName}</p>
+      <p style={s.customerEmail}>{order.user?.email || ""}</p>
       <p style={s.timeAgo}>{timeAgo(order.createdAt)}</p>
 
       <div style={s.itemsList}>
         {items.map((item, i) => (
           <div key={i} style={s.itemRow}>
             <span style={s.itemName}>{item.name} × {item.qty}</span>
-            <span style={s.itemPrice}>฿{(item.price * item.qty).toFixed(0)}</span>
+            <span style={s.itemPrice}>฿{((item.price || 0) * (item.qty || 1)).toFixed(0)}</span>
           </div>
         ))}
       </div>
@@ -391,7 +430,7 @@ const OrderCard = ({ order, onUpdateStatus }) => {
 
       {cfg.next && (
         <button
-          style={{ ...s.actionBtn, background: STATUS[cfg.next].color }}
+          style={{ ...s.actionBtn, background: (STATUS[cfg.next] || DEFAULT_STATUS).color }}
           onClick={() => onUpdateStatus(id, cfg.next)}
         >
           {cfg.nextLabel} →
@@ -412,11 +451,12 @@ const s = {
   red: { color: "#ff4d4d" },
   navTitle: { fontSize: 13, color: "#555", letterSpacing: 2, textTransform: "uppercase", borderLeft: "1px solid #1e2640", paddingLeft: 16 },
   navRight: { display: "flex", alignItems: "center", gap: 16 },
-  mockBadge: { background: "#2d2009", color: "#f59e0b", fontSize: 11, padding: "3px 10px", borderRadius: 20, fontWeight: 600 },
+  socketBadgeOn: { display: "flex", alignItems: "center", gap: 5, background: "#0a2318", color: "#22c55e", border: "1px solid #22c55e44", fontSize: 11, fontWeight: 700, padding: "4px 10px", borderRadius: 20 },
+  socketBadgeOff: { display: "flex", alignItems: "center", gap: 5, background: "#2d2009", color: "#f59e0b", border: "1px solid #f59e0b44", fontSize: 11, fontWeight: 700, padding: "4px 10px", borderRadius: 20 },
   updatedAt: { display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: "#444" },
   alertDot: { position: "absolute", top: 0, right: 0, width: 8, height: 8, background: "#ff4d4d", borderRadius: "50%" },
   logoutBtn: { background: "transparent", border: "1px solid #1e2640", color: "#888", padding: "7px 16px", borderRadius: 8, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 },
-  toast: { position: "fixed", top: 70, right: 24, background: "#ff4d4d", color: "#fff", padding: "12px 20px", borderRadius: 10, fontWeight: 600, fontSize: 14, zIndex: 1000, boxShadow: "0 4px 20px rgba(255,77,77,0.4)" },
+  toast: { position: "fixed", top: 70, right: 24, background: "#ff4d4d", color: "#fff", padding: "14px 22px", borderRadius: 12, fontWeight: 600, fontSize: 14, zIndex: 1000, boxShadow: "0 4px 24px rgba(255,77,77,0.5)", animation: "slideIn 0.3s ease" },
   content: { padding: "28px 32px" },
   loadingWrap: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 300 },
   statsGrid: { display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 32 },
@@ -426,17 +466,18 @@ const s = {
   statValue: { fontSize: 24, fontWeight: 800, margin: 0 },
   filterRow: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, flexWrap: "wrap", gap: 12 },
   sectionTitle: { fontSize: 18, fontWeight: 700 },
-  tabs: { display: "flex", gap: 8 },
+  tabs: { display: "flex", gap: 8, flexWrap: "wrap" },
   tab: { background: "#131929", border: "1px solid #1e2640", color: "#666", padding: "8px 16px", borderRadius: 8, fontSize: 13, cursor: "pointer", fontWeight: 500 },
   tabActive: { background: "#ff4d4d", border: "1px solid #ff4d4d", color: "#fff" },
   orderGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 16 },
-  empty: { color: "#555", fontSize: 15, padding: "40px 0", gridColumn: "1/-1" },
+  empty: { color: "#555", fontSize: 15, padding: "40px 0", gridColumn: "1/-1", textAlign: "center" },
   orderCard: { background: "#131929", borderRadius: 14, padding: 20, display: "flex", flexDirection: "column", gap: 8 },
   orderHeader: { display: "flex", justifyContent: "space-between", alignItems: "center" },
   orderId: { fontSize: 14, fontWeight: 700, color: "#fff" },
   tableNo: { fontSize: 12, color: "#888", background: "#1e2640", padding: "2px 8px", borderRadius: 6, marginLeft: 8 },
   statusBadge: { display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 600, padding: "4px 10px", borderRadius: 20 },
   customerName: { fontSize: 15, fontWeight: 600, margin: 0, color: "#ddd" },
+  customerEmail: { fontSize: 11, color: "#444", margin: 0 },
   timeAgo: { fontSize: 12, color: "#555", margin: 0 },
   itemsList: { background: "#0d1221", borderRadius: 8, padding: "10px 12px", display: "flex", flexDirection: "column", gap: 4, margin: "4px 0" },
   itemRow: { display: "flex", justifyContent: "space-between" },
