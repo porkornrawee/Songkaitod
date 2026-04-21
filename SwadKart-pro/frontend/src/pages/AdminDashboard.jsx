@@ -200,6 +200,20 @@ const AdminDashboard = () => {
     return () => clearInterval(interval);
   }, [fetchOrders, userInfo]);
 
+  // ── Delete order (permanent) ─────────────
+  const deleteOrder = async (orderId) => {
+    if (!window.confirm("ลบออเดอร์นี้ถาวรเลยใช่ไหม?")) return;
+    setOrders((prev) => prev.filter((o) => getId(o) !== orderId));
+    try {
+      await fetch(`${BASE_URL}/api/v1/orders/${orderId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${userInfo?.token}` },
+      });
+    } catch {
+      fetchOrders();
+    }
+  };
+
   // ── Update order status ──────────────────
   const updateStatus = async (orderId, newStatus) => {
     setOrders((prev) =>
@@ -499,6 +513,7 @@ const AdminDashboard = () => {
                     key={getId(order)}
                     order={order}
                     onUpdateStatus={updateStatus}
+                    onDelete={deleteOrder}
                     isNew={newOrderAlert?.id === getId(order)}
                   />
                 ))
@@ -531,7 +546,7 @@ const StatCard = ({ icon, label, value, color, wide }) => (
   </div>
 );
 
-const OrderCard = ({ order, onUpdateStatus, isNew }) => {
+const OrderCard = ({ order, onUpdateStatus, onDelete, isNew }) => {
   const statusKey = getStatus(order);
   const cfg = STATUS[statusKey] || DEFAULT_STATUS;
   const Icon = cfg.icon;
@@ -563,8 +578,28 @@ const OrderCard = ({ order, onUpdateStatus, isNew }) => {
           <span style={s.orderId}>#{id?.slice(-6)}</span>
           {order.tableNo && <span style={s.tableNo}>โต๊ะ {order.tableNo}</span>}
         </div>
-        <div style={{ ...s.statusBadge, background: cfg.bg, color: cfg.color }}>
-          <Icon size={13} /> {cfg.labelTH}
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ ...s.statusBadge, background: cfg.bg, color: cfg.color }}>
+            <Icon size={13} /> {cfg.labelTH}
+          </div>
+          <button
+            onClick={() => onDelete(id)}
+            title="ลบออเดอร์"
+            style={{
+              background: "transparent",
+              border: "1px solid #2d1a1a",
+              color: "#ef4444",
+              borderRadius: 6,
+              padding: "3px 7px",
+              cursor: "pointer",
+              fontSize: 13,
+              lineHeight: 1,
+              display: "flex",
+              alignItems: "center",
+            }}
+          >
+            ✕
+          </button>
         </div>
       </div>
       <p style={s.customerName}>{customerName}</p>

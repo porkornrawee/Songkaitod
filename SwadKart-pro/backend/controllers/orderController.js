@@ -328,6 +328,26 @@ export const getOrders = async (req, res) => {
 };
 
 // ==========================================
+// 🗑️ 11. ADMIN: DELETE ORDER
+// ==========================================
+export const deleteOrder = async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: "Order not found" });
+
+    await order.deleteOne();
+
+    if (req.io) {
+      req.io.emit("orderDeleted", { _id: req.params.id });
+    }
+
+    res.json({ message: "Order deleted successfully", _id: req.params.id });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// ==========================================
 // 📈 9. SALES ANALYTICS
 // ==========================================
 export const getSalesStats = async (req, res) => {

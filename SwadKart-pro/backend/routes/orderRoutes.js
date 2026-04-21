@@ -11,6 +11,7 @@ import {
   updateOrderToPaid,
   cancelOrder,
   getMyRestaurantOrders,
+  deleteOrder,
 } from "../controllers/orderController.js";
 import { protect, authorizeRoles } from "../middleware/authMiddleware.js";
 
@@ -126,6 +127,12 @@ router.put(
 // ============================================================
 
 router.put("/:id/pay", protect, updateOrderToPaid);
+
+// ============================================================
+// 🗑️ ADMIN: DELETE ORDER
+// ============================================================
+
+router.delete("/:id", protect, authorizeRoles("admin"), deleteOrder);
 
 // ============================================================
 // 🔍 FETCHING BY ID (Must be at the end)
