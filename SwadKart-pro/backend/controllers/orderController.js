@@ -316,6 +316,10 @@ export const getOrders = async (req, res) => {
   try {
     const orders = await Order.find({})
       .populate("user", "id name email")
+      .populate({
+        path: "orderItems.product",
+        select: "name image category",
+      })
       .sort({ createdAt: -1 });
     res.json(orders);
   } catch (error) {
