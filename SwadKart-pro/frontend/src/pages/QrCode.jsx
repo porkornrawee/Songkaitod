@@ -343,6 +343,7 @@ const styles = {
     textTransform: "uppercase",
     margin: "0 0 10px",
   },
+  // ✅ เพิ่มใหม่: wrapper แต่ละ item
   summaryItemBlock: {
     paddingBottom: 10,
     marginBottom: 6,
@@ -355,11 +356,13 @@ const styles = {
   },
   summaryItem: { fontSize: 14, color: "#ccc" },
   summaryItemPrice: { fontSize: 14, color: "#fff", fontWeight: 600 },
+  // ✅ เพิ่มใหม่: ผงที่คลุก
   summaryVariant: {
     fontSize: 12,
     color: "#ff9900",
     margin: "2px 0 0 8px",
   },
+  // ✅ เพิ่มใหม่: addon/ดิป
   summaryAddons: {
     fontSize: 12,
     color: "#888",
