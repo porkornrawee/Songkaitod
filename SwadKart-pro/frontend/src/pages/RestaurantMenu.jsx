@@ -17,9 +17,9 @@ const STATIC_MENU = [
     price: 39,
     description: "เลือกผง 2 รสชาติ",
     addons: [
-      { _id: "a1", name: "ชีส", price: 0 },
+      { _id: "a1", name: "ชีส(sold out)", price: 0 },
       { _id: "a2", name: "ปาปริก้า", price: 0 },
-      { _id: "a3", name: "วิงซ์แซ่บ", price: 0 },
+      { _id: "a3", name: "วิงซ์แซ่บ(sold out)", price: 0 },
       { _id: "a4", name: "ฮอต แอนด์ สไปซี่", price: 0 },
     ],
     extras: [
