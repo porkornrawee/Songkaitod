@@ -126,9 +126,9 @@ const AdminDashboard = () => {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       const raw = Array.isArray(data) ? data : (data.orders ?? []);
-      const sorted = [...raw].sort(
-        (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
-      );
+      const sorted = [...raw]
+        .filter((o) => !deletingIdsRef.current.has(getId(o)))
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       sorted.forEach((o) => orderIdsRef.current.add(getId(o)));
       setOrders(sorted);
       setLastUpdated(new Date());
@@ -201,16 +201,24 @@ const AdminDashboard = () => {
   }, [fetchOrders, userInfo]);
 
   // ── Delete order (permanent) ─────────────
+  const deletingIdsRef = useRef(new Set());
+
   const deleteOrder = async (orderId) => {
     if (!window.confirm("ลบออเดอร์นี้ถาวรเลยใช่ไหม?")) return;
-    setOrders((prev) => prev.filter((o) => getId(o) !== orderId));
+    deletingIdsRef.current.add(orderId);
     try {
-      await fetch(`${BASE_URL}/api/v1/orders/${orderId}`, {
+      const res = await fetch(`${BASE_URL}/api/v1/orders/${orderId}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${userInfo?.token}` },
       });
+      if (res.ok) {
+        setOrders((prev) => prev.filter((o) => getId(o) !== orderId));
+        orderIdsRef.current.delete(orderId);
+      }
     } catch {
-      fetchOrders();
+      console.error("Delete failed");
+    } finally {
+      deletingIdsRef.current.delete(orderId);
     }
   };
 
